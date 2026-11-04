@@ -64,6 +64,8 @@ Active attempt `E3-formal-independent-20261104-03` uses A100 session `exp-e3-rec
 
 2026-11-05 05:19 JST: seed42 GRPO reached step107/300. `colab usage`: 63.52 CU remaining, 17.34 CU/hour, four assignments; shared-account readings only, not E3-attributed cost. Independent comparison L4/A100 allocations refused; existing run preserved.
 
+2026-11-05 05:25 JST: seed42 GRPO reached step110/300. `colab usage`: 62.08 CU remaining, 17.34 CU/hour, four assignments; shared-account readings only, not E3-attributed cost. Existing run preserved.
+
 ## Historical observations
 
 | Run | Session | Requested / allocated GPU | Job start | Latest stage | Observed CU cost |
