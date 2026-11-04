@@ -1,0 +1,2 @@
+{"step": 50, "dataset": "gsm8k", "split": "dev", "n": 50, "mean": 0.74}
+{"step": 50, "dataset": "hotpotqa", "split": "dev", "n": 50, "mean": 0.40740953332045593}

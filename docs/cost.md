@@ -20,6 +20,8 @@ Active attempt `E3-formal-independent-20261104-03` uses A100 session `exp-e3-rec
 
 2026-11-05 02:46 JST: step50 GSM8K dev result (50 questions) collected; HotpotQA dev not yet observed. `colab usage`: 106.87 CU remaining, 17.34 CU/hour, four assignments. Shared-account readings only, not E3-attributed cost; existing run preserved.
 
+2026-11-05 02:54 JST: step50 dev evaluation completed for both datasets and actual training reached step51. `colab usage`: 103.95 CU remaining, 17.34 CU/hour, four assignments; shared-account readings, not E3-attributed charges. Existing run and output client preserved.
+
 ## Historical observations
 
 | Run | Session | Requested / allocated GPU | Job start | Latest stage | Observed CU cost |
