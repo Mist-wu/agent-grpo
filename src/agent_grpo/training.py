@@ -158,7 +158,7 @@ def training(config_path, data_path, out_dir, seed, adapter=None, resume=None, d
     model, tokenizer = model_and_tokenizer(config, resume or adapter, trainable=True)
     device = next(model.parameters()).device
     meta = metadata(config, data_path, model)
-    meta["rollout_batch_size"] = config.get("rollout_batch_size", 32)
+    meta["rollout_batch_size"] = config.get("rollout_batch_size", 64)
     (out / "run.json").write_text(json.dumps(meta, indent=2) + "\n")
     (out / "env.txt").write_text(subprocess.check_output([__import__('sys').executable, "-m", "pip", "freeze"], text=True))
     optimizer = torch.optim.AdamW((p for p in model.parameters() if p.requires_grad), lr=config["learning_rate"])
@@ -180,7 +180,7 @@ def training(config_path, data_path, out_dir, seed, adapter=None, resume=None, d
         sampled = rng.sample(tasks, min(config["questions_per_step"], len(tasks)))
         batch, zero_groups = [], 0
         group_size = config["group_size"]
-        questions_per_batch = max(1, config.get("rollout_batch_size", 32) // group_size)
+        questions_per_batch = max(1, config.get("rollout_batch_size", 64) // group_size)
         sampled_trajectories = []
         for offset in range(0, len(sampled), questions_per_batch):
             rollout_tasks = [task for task in sampled[offset:offset + questions_per_batch] for _ in range(group_size)]
