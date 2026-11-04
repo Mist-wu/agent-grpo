@@ -1,5 +1,9 @@
 # E3 live handoff
 
+## 2026-11-05 07:08 JST: step150 GSM8K dev collected
+
+Existing A100 run produced **step150 GSM8K dev correctness0.76 (n50)**, collected from the documented dev.jsonl download into `results/collected/seed42/grpo-42-dev-step150-gsm8k.jsonl`. Step150 HotpotQA dev and step151 have not yet been observed. This equals the recorded step100 GSM8K aggregate but does not establish paired stability/significance, final-test performance or SFT improvement. Existing foreground job and active output subscriber preserved; no evaluation/training resubmission. E2 full-test control already complete/collected, L4 released. Shared usage **32.45 CU**, **15.40 CU/hour**, three assignments, not E3-attributed charges. Next: repeat original status/output/dev downloads below; collect HotpotQA dev when produced and continue remaining seeds/full trained comparisons/trajectory analysis.
+
 ## 2026-11-05 07:02 JST: first150 training analysis
 
 Preserved original foreground A100 run/output subscriber; status running and output still ends at150/300. Downloaded dev.jsonl still contains only step50/100: no step150 dev result claimed. Generated actual small-CPU descriptive analysis with:
