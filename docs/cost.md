@@ -18,6 +18,8 @@ Active attempt `E3-formal-independent-20261104-03` uses A100 session `exp-e3-rec
 
 2026-11-05 02:39 JST: `colab usage` again reported 108.35 CU remaining, 17.34 CU/hour, four assignments. Output still ends at GRPO step50 and dev.jsonl is not yet available; no extra GPU was allocated (L4 and A100 comparison requests refused). Account readings are not E3-only charges.
 
+2026-11-05 02:46 JST: step50 GSM8K dev result (50 questions) collected; HotpotQA dev not yet observed. `colab usage`: 106.87 CU remaining, 17.34 CU/hour, four assignments. Shared-account readings only, not E3-attributed cost; existing run preserved.
+
 ## Historical observations
 
 | Run | Session | Requested / allocated GPU | Job start | Latest stage | Observed CU cost |
