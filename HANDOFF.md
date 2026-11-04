@@ -1,5 +1,9 @@
 # E3 live handoff
 
+## 2026-11-05 08:04 JST: GRPO progress
+
+Original A100 run `E3-formal-independent-20261104-03` on `exp-e3-recovery-a100` reached **172/300 seed42 GRPO steps**. Downloaded actual records using existing status/output/train commands and copied to `results/collected/seed42/grpo-42-train-steps1-172.jsonl`. Existing foreground job/output subscriber preserved; no resubmission. Checkpoint150 and complete intermediate dev scores already collected; E2 full-test control complete/collected and L4 released. Shared usage **18.32 CU**, **15.40 CU/hour**, three assignments, not E3-attributed charges. Continue original polling below; collect checkpoint200/dev when produced. Remaining seeds, full trained comparisons and final trajectory analysis unfinished.
+
 ## 2026-11-05 07:57 JST: GRPO progress
 
 Original A100 run `E3-formal-independent-20261104-03` on `exp-e3-recovery-a100` reached **169/300 seed42 GRPO steps**. Downloaded actual records using existing status/output/train commands and copied to `results/collected/seed42/grpo-42-train-steps1-169.jsonl`. Existing foreground job/output subscriber preserved; no resubmission. Checkpoint150 and complete intermediate dev scores already collected; E2 full-test control complete/collected and L4 released. Shared usage **20.89 CU**, **15.40 CU/hour**, three assignments, not E3-attributed charges. Continue original polling below; collect checkpoint200/dev when produced. Remaining seeds, full trained comparisons and final trajectory analysis unfinished.
