@@ -1,0 +1,88 @@
+{
+  "source": "results/collected/seed42/grpo-42-train-steps1-100.jsonl",
+  "scope": "intermediate_training_descriptive_statistics",
+  "limitations": [
+    "Questions and sampled trajectories vary across steps; block means are not paired comparisons.",
+    "Training correctness mixes math correctness and HotpotQA F1; it is not held-out accuracy.",
+    "Step seconds exclude checkpoint copies and dev evaluation; they are not total runtime or CU cost.",
+    "One partial seed cannot establish final improvement or three-seed uncertainty."
+  ],
+  "training_step_seconds_sum": 13231.047476162003,
+  "blocks": [
+    {
+      "first_step": 1,
+      "last_step": 20,
+      "n_steps": 20,
+      "means": {
+        "reward": 0.3973016745072137,
+        "correctness": 0.35968448700721367,
+        "kl": 0.04705944729994371,
+        "tool_calls": 1.13046875,
+        "response_tokens": 113.49921875,
+        "zero_advantage_group_fraction": 0.0625,
+        "truncated_fraction": 0.00859375,
+        "seconds": 142.3636430460499
+      }
+    },
+    {
+      "first_step": 21,
+      "last_step": 40,
+      "n_steps": 20,
+      "means": {
+        "reward": 0.4456436717015907,
+        "correctness": 0.40107335920159065,
+        "kl": 0.06461616075433767,
+        "tool_calls": 1.03828125,
+        "response_tokens": 115.56796875,
+        "zero_advantage_group_fraction": 0.09375,
+        "truncated_fraction": 0.0046875,
+        "seconds": 132.88790336409994
+      }
+    },
+    {
+      "first_step": 41,
+      "last_step": 60,
+      "n_steps": 20,
+      "means": {
+        "reward": 0.5422909227820019,
+        "correctness": 0.49623623528200184,
+        "kl": 0.07252466949967129,
+        "tool_calls": 1.03046875,
+        "response_tokens": 141.18125,
+        "zero_advantage_group_fraction": 0.16875,
+        "truncated_fraction": 0.01015625,
+        "seconds": 129.63081847355005
+      }
+    },
+    {
+      "first_step": 61,
+      "last_step": 80,
+      "n_steps": 20,
+      "means": {
+        "reward": 0.5329720158109191,
+        "correctness": 0.4865657658109191,
+        "kl": 0.08587103733352705,
+        "tool_calls": 1.0078125,
+        "response_tokens": 155.98515625,
+        "zero_advantage_group_fraction": 0.13125,
+        "truncated_fraction": 0.021875,
+        "seconds": 131.58225968074993
+      }
+    },
+    {
+      "first_step": 81,
+      "last_step": 100,
+      "n_steps": 20,
+      "means": {
+        "reward": 0.5731442405151295,
+        "correctness": 0.5270504905151294,
+        "kl": 0.06875732224780222,
+        "tool_calls": 1.0375,
+        "response_tokens": 161.54765625,
+        "zero_advantage_group_fraction": 0.18125,
+        "truncated_fraction": 0.01015625,
+        "seconds": 125.08774924365034
+      }
+    }
+  ]
+}

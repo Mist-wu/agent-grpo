@@ -54,6 +54,8 @@ Active attempt `E3-formal-independent-20261104-03` uses A100 session `exp-e3-rec
 
 2026-11-05 04:43 JST: seed42 GRPO reached step100/300 and checkpoint-0100 was observed on Drive with adapter and training state. `colab usage`: 73.65 CU remaining, 17.34 CU/hour, four assignments; shared-account observations only, not E3-attributed cost. Existing run preserved.
 
+2026-11-05 04:50 JST: output still ends at step100 and no step100 dev result observed. `colab usage`: 72.20 CU remaining, 17.34 CU/hour, four assignments; shared-account readings only. Recorded first100 training-step times sum to 13,231.0475 seconds, excluding dev evaluation/checkpoint copying; not total runtime or E3 CU cost.
+
 ## Historical observations
 
 | Run | Session | Requested / allocated GPU | Job start | Latest stage | Observed CU cost |
