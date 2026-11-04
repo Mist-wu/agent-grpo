@@ -7,7 +7,7 @@ import subprocess
 import sys
 import time
 from .schema import Trajectory, append_jsonl, read_tasks
-from .training import load_config, seed_all, model_and_tokenizer, token_logprobs, metadata
+from .training import load_config, seed_all, model_and_tokenizer, token_logprobs, metadata, copy_outputs, copy_checkpoint
 from .rollout import sample_trajectory, batch_direct_trajectories, batch_tool_trajectories
 from .tools import probe_python_sandbox
 
@@ -75,6 +75,7 @@ def collect(config_path, data_path, out_path, seed=42, target=500, attempts_per_
     meta_path.write_text(json.dumps(meta, indent=2) + "\n")
     if accepted < target:
         raise RuntimeError(f"only {accepted}/{target} correct trajectories collected; inspect before changing protocol")
+    copy_outputs([out, meta_path, attempts_path], "data")
 
 
 def sft(config_path, trajectories_path, out_dir, seed=42, epochs=1, resume=None):
@@ -142,6 +143,8 @@ def sft(config_path, trajectories_path, out_dir, seed=42, epochs=1, resume=None)
     meta = metadata(config, trajectories_path, model)
     meta.update(seed=seed, epochs=epochs, trajectories=len(records), purpose="cold-start-sft")
     (out / "run.json").write_text(json.dumps(meta, indent=2) + "\n")
+    copy_checkpoint(out / "adapter")
+    copy_outputs([out / "run.json", out / "train.jsonl"], out.name)
 
 
 def evaluate(config_path, data_path, out_path, condition, seed=42, adapter=None, batch_size=1):
@@ -204,3 +207,4 @@ def evaluate(config_path, data_path, out_path, condition, seed=42, adapter=None,
                 "batch_size": len(batch), "batch_seconds": elapsed, "execution_commit": meta["git_commit"]})
         print(json.dumps({"condition": condition, "completed": len(done) + offset + len(batch),
                           "total": len(tasks), "batch_size": len(batch), "batch_seconds": elapsed}), flush=True)
+    copy_outputs([out, meta_path, Path(str(out) + ".executions.jsonl")], "results")

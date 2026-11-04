@@ -107,6 +107,16 @@ def copy_checkpoint(directory):
                        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 
+def copy_outputs(paths, subdirectory):
+    """Copy closed stage outputs to the same configured Drive experiment directory."""
+    remote = os.environ.get("EXP_CHECKPOINT_REMOTE")
+    if remote:
+        for path in map(Path, paths):
+            destination = remote.rstrip("/") + "/" + subdirectory.strip("/") + "/" + path.name
+            subprocess.run(["rclone", "copyto", str(path), destination], check=True,
+                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+
 def save_checkpoint(directory, model, tokenizer, optimizer, scaler, step, rng, meta):
     import torch
     directory = Path(directory)
@@ -219,4 +229,5 @@ def training(config_path, data_path, out_dir, seed, adapter=None, resume=None, d
                     enable_python=config.get("python_tool", False)).reward["correctness"] for task in subset]
                 append_jsonl(out / "dev.jsonl", {"step": step + 1, "dataset": dataset, "split": "dev",
                     "n": len(values), "mean": sum(values) / len(values)})
+    copy_outputs([out / name for name in ["run.json", "env.txt", "train.jsonl", "rollouts.jsonl", "dev.jsonl"]], out.name)
     return out
