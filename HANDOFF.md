@@ -1,5 +1,9 @@
 # E3 live handoff
 
+## 2026-11-05 04:37 JST: GRPO progress
+
+Existing run `E3-formal-independent-20261104-03` on `exp-e3-recovery-a100` reached seed42 GRPO **99/300 steps**. Downloaded actual records using the documented training-record command and copied them to `results/collected/seed42/grpo-42-train-steps1-99.jsonl`. Existing output subscriber remains active; no command was resubmitted. Step50 checkpoint and intermediate dev results are already collected; checkpoint100 is not yet claimed. Full-test evaluations and remaining seeds remain unfinished. E2 comparison awaits capacity after the 03:35 refusals. Shared usage: 76.53 CU remaining, 17.34 CU/hour across four assignments, not E3-only cost. Continue polling existing status/output and training records below; watch for checkpoint100 and its dev results.
+
 ## 2026-11-05 04:30 JST: GRPO progress
 
 Existing run `E3-formal-independent-20261104-03` on `exp-e3-recovery-a100` reached seed42 GRPO **96/300 steps**. Downloaded actual records using the documented training-record command and copied them to `results/collected/seed42/grpo-42-train-steps1-96.jsonl`. Existing output subscriber remains active; no command was resubmitted. Step50 checkpoint and intermediate dev results are already collected; full-test evaluations and remaining seeds remain unfinished. E2 comparison awaits capacity after the 03:35 refusals. Shared usage: 77.97 CU remaining, 17.34 CU/hour across four assignments, not E3-only cost. Continue polling existing status/output and training records below; watch for checkpoint100 and its dev results.
