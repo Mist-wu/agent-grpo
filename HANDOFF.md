@@ -6,6 +6,14 @@ The independent formal E3 campaign has been submitted to the assigned A100 sessi
 
 Existing implementation: strict Qwen tool protocol shared with E2; calculator, BM25 search and optional isolated Python; source-normalized dataset preparation; correct-trajectory collection; action-only SFT; clipped GRPO with frozen old/reference log probabilities; resumable checkpoints; final-test evaluation and three-seed summaries.
 
+## Actual dependency failure and same-session recovery
+
+Attempt `E3-formal-independent-20261104-01` failed with return code 1 after 246.05 seconds, after data preparation. The real error was `operator torchvision::nms does not exist`, imported through PEFT/Transformers Bloom; preinstalled torchvision binaries did not match pinned torch 2.6.0. The failed attempt's status/output and prepared data remain in place.
+
+The text-only formal launcher now uninstalls incompatible optional `torchvision` and `torchaudio` after installing its pinned stack. It accepts `E3_DATA_DIR` to reuse the existing prepared data. Recovery uses the **same** `exp-e3-formal` A100 with a new attempt ID `E3-formal-independent-20261104-02`; its data points to `/content/experiment-runs/E3-formal-independent-20261104-01/workspace/data`, preserving the first attempt's files. No preliminary run or new GPU allocation is involved.
+
+E2 reports that its pending main adapter is trained from the Glaive fallback (train 18,547 / dev 2,003 / test 2,000), not xLAM/60k. Final exported location will be recorded in E2 `results/main-seed42.adapter-receipt.json`, accompanied by `main-seed42.train.json`. Do not label the comparison as xLAM trained or completed before those real artifacts exist.
+
 ## Live campaign handoff
 
 - Session: `exp-e3-formal`; A100 assignment confirmed by root, endpoint `gpu-a100-s-ass1c0-fz5a9fduhlbu`.
