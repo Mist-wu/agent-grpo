@@ -1,5 +1,9 @@
 # E3 live handoff
 
+## 2026-11-05 00:00 JST server observation
+
+Existing run `E3-formal-independent-20261104-03` reports running on `exp-e3-recovery-a100`. Its output reached **304/500 seed 42 accepted trajectories from 2,132 attempts**. The last completed Drive copy shown in this downloaded log is **276 accepted / 2,004 attempts**; a copy of the 304 batch was not yet reported at observation. SFT/GRPO have not started. Existing `exp-iopub-e3-recovery.service` remains active. Shared account usage was 151.69 CU, 17.34 CU/hour across four assignments (not E3-specific). E2's final adapter is still pending. No job was resubmitted; use the download commands below to observe continuation and Drive copy.
+
 ## 2026-11-04 23:54 JST server observation
 
 Run `E3-formal-independent-20261104-03` remains in seed 42 cold collection: output reports **233/500 accepted from 1,664 attempts**, with the latest completed Drive copy at 23:53:44 JST. The existing output subscriber remains active. SFT/GRPO have not started. E2's final adapter still awaits the training run. Shared account `colab usage` reported 153.13 CU remaining and 17.34 CU/hour across four assignments; not an E3-only cost. Do not resubmit the active job. Poll using the commands below.
