@@ -1,96 +1,59 @@
 # Multi-turn tool GRPO
 
-A hand-written, auditable Qwen2.5 LoRA experiment: can outcome-reward RL improve calculator/search use beyond a separate cold-start SFT adapter?
+Hand-written Qwen2.5 LoRA experiment: compare base models, E2 toolcall LoRA, a separate cold-start SFT, and SFT+GRPO on calculator/search tasks. Formal training and results are pending. No claimed accuracy improvements are present.
 
-**Status:** executable CPU-tested implementation; GPU smoke, cold-start sampling and formal benchmark results are pending. There are no claimed accuracy improvements yet.
+## Formal execution
 
-## Reproduce
-
-Python 3.11+; Node/server tools are not required inside this repository. Install training dependencies only on a suitably provisioned runtime, not the 2 GB orchestration server:
+Use an already allocated GPU runtime. This repository does not allocate GPUs, start paid APIs or publish repositories.
 
 ```sh
 python -m pip install -e '.[train]'
-python -m unittest discover -s tests -v
 python scripts/run.py prepare --out data
+export EXP_CHECKPOINT_REMOTE='gdrive:exp/runs/E3'
 ```
 
-`prepare` downloads pinned-at-run dataset revisions and writes disjoint `train.jsonl`, `dev.jsonl`, `test.jsonl` with source hashes. Large data stays on the GPU/CPU runtime or Drive. GSM-Symbolic keeps all released main instances; bootstrap resamples templates.
+The data command resolves dataset revisions and writes source hashes, train/dev/test JSONL. GSM8K dev is held out from train; its official test is final test. HotpotQA uses distractor training data and reserves its released validation set for final test. GSM-Symbolic main includes all released instances. Large input data is staged on local runtime disk; archive source data with rclone.
 
-On an **already allocated** L4, inspect the first trajectories and do a 20-step debug run:
+Controller supplies private `RCLONE_CONFIG` and approved `RCLONE_HEADER` (quota-project header) to the runtime. `EXP_CHECKPOINT_REMOTE` is optional: when set, each completed local checkpoint is copied with `rclone copy` to `<prefix>/<run-directory>/<checkpoint-directory>`. A failed copy stops the command and leaves local files in place. There are no receipt state machines or required persistence gates.
 
-```sh
-python scripts/run.py collect --config configs/l4-debug.json --data data/train.jsonl --out data/debug-cold.jsonl --target 2
-python scripts/run.py sft --config configs/l4-debug.json --data data/debug-cold.jsonl --out results/debug-sft
-python scripts/run.py train --config configs/l4-debug.json --data data/train.jsonl --dev data/dev.jsonl --out results/debug-grpo --adapter results/debug-sft/adapter
-python scripts/run.py evaluate --config configs/l4-debug.json --data data/dev.jsonl --out results/debug-eval.jsonl --condition grpo --adapter results/debug-grpo/checkpoint-0020 --limit 2
-```
-
-Debug artifacts are marked smoke and cannot pass the formal verifier. Inspect reward changes, masks, trajectories and memory; a 20-step loss decline is not an unconditional correctness requirement for noisy policy optimization.
-
-## Required durable checkpoint hook
-
-Native Colab Drive mounting is **not** the unattended persistence path. Keep data and training outputs on the runtime disk, and configure the controller-provisioned rclone/common helper before SFT or GRPO:
-
-```sh
-export EXP_CHECKPOINT_SYNC='["python3","-m","exp_common.checkpoint","--source","{source}","--experiment","{experiment}","--run-id","{run_id}","--receipt","{receipt}"]'
-```
-
-The wrapper makes `exp_common` importable via `.experiment-common`/`PYTHONPATH`; it privately forwards `RCLONE_CONFIG` and the approved `RCLONE_HEADER` quota-project setting. Do not put credentials in this repository or hook argv. `EXP_DRIVE_REMOTE` defaults to `gdrive:exp/runs`; destinations are `/E3/<unique-checkpoint-id>`.
-
-Checkpoint files are closed, checksummed and atomically renamed before invoking the hook with `shell=False`. Both exit 0 and a fresh matching `state=verified` receipt are required; files are rechecked after copying. A failure stops the stage while retaining the new local checkpoint and the prior `durable-checkpoint.json`. Never release the runtime when `checkpoint-status.json` says `sync_failed`. SFT/GRPO formally require this hook; all `/content` checkpoint runs require it even in debug mode. Ordinary local CPU smoke may explicitly remain local-only.
-
-Retry a failed upload without loading a model:
-
-```sh
-python scripts/run.py sync-checkpoint results/grpo-42/checkpoint-0050
-```
-
-To resume on a fresh runtime, use the recorded destination in the verified receipt:
-
-```sh
-rclone copy gdrive:exp/runs/E3/REPLACE_WITH_CHECKPOINT_ID results/grpo-42/checkpoint-0050 --checksum
-python scripts/run.py sync-checkpoint results/grpo-42/checkpoint-0050
-# Then run train --resume with original config, seed, data and cold-SFT adapter.
-```
-
-Resume verifies the downloaded file manifest and re-verifies durable upload before loading optimizer state. Keep the cold-SFT final checkpoint too: it contains a complete adapter usable directly via `--adapter`, even if the convenience `adapter/` directory was not copied.
-
-For formal 1.5B training use `configs/a100.json` (300 steps). If A100 is unavailable, `configs/l4-full.json` runs all planned steps with 0.5B; disclose the model change. T4 debug selects fp16 with GradScaler. Do not mix model/tokenizer shapes or reference baselines across profiles.
+Formal 1.5B configuration is `configs/a100.json`: 300 steps, 8 questions × 8 trajectories, two updates per sampled batch, three seeds. `configs/l4-full.json` is the disclosed 0.5B alternative with the same formal step count. Model sizes and adapter compatibility must be reported accurately.
 
 ```sh
 python scripts/run.py evaluate --config configs/a100.json --data data/test.jsonl --out results/eval-base-direct.jsonl --condition base-direct
 python scripts/run.py evaluate --config configs/a100.json --data data/test.jsonl --out results/eval-base-tools.jsonl --condition base-tools
-python scripts/run.py evaluate --config configs/a100.json --data data/test.jsonl --out results/eval-e2.jsonl --condition e2-lora --adapter /path/to/toolcall-lora/adapter
+# Set after E2 exports its 1.5B main adapter.
+export E2_ADAPTER=/content/e2-artifacts/main-seed42/adapter
+python scripts/run.py evaluate --config configs/a100.json --data data/test.jsonl --out results/eval-e2.jsonl --condition e2-lora --adapter "$E2_ADAPTER"
 bash scripts/run_seeds.sh configs/a100.json
 python scripts/run.py report results/eval-*.jsonl
 python scripts/verify_completion.py
 ```
 
-The seed script starts fresh stages and stops on any error; it deliberately refuses to overwrite work. After interruption inspect existing stage artifacts and run individual commands. Evaluation resumes by validated task IDs. GRPO resumes optimizer, RNG and adapter using:
+The seed script performs collection, SFT, SFT evaluation, GRPO, and GRPO evaluation for seeds 42/43/44. It can begin independently of E2; E2's adapter is only required for the separate E2 baseline and final complete comparison.
+
+## Recovery
+
+Checkpoints contain LoRA weights, optimizer/scaler state, CPU/CUDA RNG and sampling RNG. Local files are written with normal model/tokenizer saves and `torch.save`; optional rclone copy follows saving.
 
 ```sh
+# Retrieve a checkpoint on a fresh runtime.
+rclone copy gdrive:exp/runs/E3/grpo-42/checkpoint-0050 results/grpo-42/checkpoint-0050
+# Also retrieve the original cold-SFT adapter/checkpoint and stage the same data.
 python scripts/run.py train --config configs/a100.json --data data/train.jsonl --dev data/dev.jsonl --out results/grpo-42 --seed 42 --adapter results/cold-42/adapter --resume results/grpo-42/checkpoint-0050
+# Retry an optional upload without loading a model.
+python scripts/run.py copy-checkpoint results/grpo-42/checkpoint-0050
 ```
 
-SFT checkpoints every 25 optimizer updates and supports `sft --resume results/cold-42/checkpoint-0025` with the same stage arguments. Cold-start collection resumes accepted IDs and attempted-question counts with matching provenance; a resumed sampling stream is recorded as a restart rather than claimed bitwise identical. Partial/corrupt JSONL or checkpoint directories fail closed for inspection.
+SFT checkpoints every 25 updates and supports `sft --resume <checkpoint>` with the original arguments. A saved SFT checkpoint itself can serve as a LoRA adapter. Collection resumes accepted task IDs and attempt counts; its restarted sampling stream is not claimed bitwise identical. Evaluation resumes completed task IDs. After an interrupted seed script, run the individual stage's resume command instead of restarting every stage.
 
-## Objective and implementation
+## Method
 
-- Sample G trajectories per question, center/scale outcome rewards within each group (population standard deviation, epsilon 1e-6).
-- Freeze sampled old-policy and base-reference log probabilities before updates. Optimize the clipped current/old ratio with a k3 KL regularizer. Two updates per rollout make clipping operational.
-- Average loss over **generated action tokens within each trajectory**, then trajectories. Prompt text and inserted tool outputs have zero gradient mask, even though later actions condition on them.
-- One trajectory per gradient microbatch limits peak GPU memory. FP16 uses loss scaling; bf16 is rejected on unsupported GPUs. Checkpoints include optimizer, scaler, CPU/CUDA and sampling RNG states.
-- The parsing reward is once per trajectory (+0.1), tool cost is -0.05/call, at most four calls. This prevents repeated syntactically valid calls from farming the parse bonus.
-- Checkpoint evaluation uses held-out training dev data. Final test is never used for checkpoint selection.
+- Frozen old-policy action log probabilities, clipped current/old ratios, and base-reference k3 KL implement the GRPO objective. LoRA/base dropout is zero and sampling temperature is 1 without top-k/top-p truncation.
+- Loss is averaged over generated action tokens per trajectory, then over trajectories. Prompt and inserted tool tokens are not loss targets. One trajectory per gradient microbatch limits GPU memory.
+- The reference for KL is the base model with LoRA disabled; cold-start SFT is the policy initialization, not the reference model.
+- Reward is answer correctness plus one per-trajectory parsing bonus of 0.1, minus 0.05 per tool call; at most four calls. Numeric extraction accepts final tags, GSM8K markers, boxed answers and explicit answer/result clauses. HotpotQA uses normalized token F1.
+- Cold-start SFT uses correct trajectories from the training split. Checkpoint evaluations use held-out dev, never final test.
+- Direct HotpotQA baseline sees full context; tool conditions see titles and use question-local BM25 retrieval. Report truncation and this prompt difference.
+- Calculator uses bounded AST arithmetic. Python stays disabled unless Linux bubblewrap isolation passes; it never falls back to unisolated host execution.
 
-## Tools and boundaries
-
-Calculator is bounded AST arithmetic, not `eval`. Search is BM25 over the current question's provided paragraphs, never the network. Python is disabled in all supplied configs. To enable it, install Linux `bubblewrap`, pass `python scripts/run.py probe-python`, then set `python_tool: true` in the JSON config. It gets a minimal read-only filesystem, no network namespace connectivity, five-second timeout and bounded output. There is no host execution fallback. Colab may prohibit user namespaces; retain the two-tool profile and disclose this rather than bypass isolation.
-
-Tool format is copied from E2's `toolcall_lora/tool_format.py`; it rejects duplicate JSON keys, nonfinite values and malformed tags. Credentials are never required for the standard public datasets/models; gated E2 access is a separate experiment.
-
-## Results and completion
-
-Raw test rows, configs, commit, model revision, hardware and data hashes accompany every report. Formal completion requires five conditions, three cold-SFT/GRPO seeds, raw final-test coverage, 300 training steps and real final adapters, a filled cost ledger and trajectory analysis. `scripts/verify_completion.py` is an independent stdlib gate; it currently fails correctly because no GPU experiments have been run.
-
-See [baseline sources](docs/baselines.md), [cost log](docs/cost.md), and [handoff](HANDOFF.md). No data or code is published automatically.
+Reports include raw rows, seeds, hardware, config, model/data revisions and commit. Train-derived results use three seeds; GSM-Symbolic uncertainty resamples template clusters. Public benchmark contamination remains a limitation. See [sources](docs/baselines.md), [cost ledger](docs/cost.md), and [handoff](HANDOFF.md).

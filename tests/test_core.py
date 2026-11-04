@@ -89,17 +89,12 @@ class CoreTests(unittest.TestCase):
         self.assertEqual(symbolic.source['template_id'],4)
         self.assertEqual(symbolic.id,'gsm-symbolic:test:4:2')
 
-    def test_report_rejects_smoke_and_clusters_symbolic(self):
+    def test_report_clusters_symbolic(self):
         with tempfile.TemporaryDirectory() as directory:
             path=Path(directory)/'eval.jsonl'
-            meta={'smoke':True,'split':'test','tasks':1}
+            meta={'split':'test','tasks':4}
             Path(str(path)+'.metadata.json').write_text(json.dumps(meta))
-            path.write_text('{}\n')
-            with self.assertRaises(ValueError):
-                summarize([path],Path(directory)/'out.json')
-            meta['smoke']=False;meta['tasks']=4
-            Path(str(path)+'.metadata.json').write_text(json.dumps(meta))
-            rows=[{'task_id':str(i),'condition':'grpo','seed':42,'dataset':'gsm-symbolic','split':'test','smoke':False,'source':{'template_id':i//2},'reward':{'correctness':float(i<2),'tool_calls':1},'truncated':False} for i in range(4)]
+            rows=[{'task_id':str(i),'condition':'grpo','seed':42,'dataset':'gsm-symbolic','split':'test','source':{'template_id':i//2},'reward':{'correctness':float(i<2),'tool_calls':1},'truncated':False} for i in range(4)]
             path.write_text(''.join(json.dumps(r)+'\n' for r in rows))
             summary=summarize([path],Path(directory)/'out.json')
             self.assertEqual(summary['evaluations'][0]['mean'],.5)

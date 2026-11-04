@@ -34,13 +34,12 @@ def main():
             p.add_argument("--dev")
         if name == "evaluate":
             p.add_argument("--condition", choices=["base-direct", "base-tools", "e2-lora", "cold-sft", "grpo"], required=True)
-            p.add_argument("--limit", type=int)
     report = sub.add_parser("report")
     report.add_argument("results", nargs="+")
     report.add_argument("--out", default="results/formal-summary.json")
     sub.add_parser("probe-python")
-    sync = sub.add_parser("sync-checkpoint")
-    sync.add_argument("directory")
+    copy = sub.add_parser("copy-checkpoint")
+    copy.add_argument("directory")
     args = parser.parse_args()
     if args.command == "prepare":
         print(json.dumps(prepare(args.out, args.train_count, args.dev_count, args.test_count, args.seed), indent=2))
@@ -55,13 +54,12 @@ def main():
         training(args.config, args.data, args.out, args.seed, args.adapter, args.resume, args.dev)
     elif args.command == "evaluate":
         from .stages import evaluate
-        evaluate(args.config, args.data, args.out, args.condition, args.seed, args.adapter, args.limit)
+        evaluate(args.config, args.data, args.out, args.condition, args.seed, args.adapter)
     elif args.command == "report":
         summarize(args.results, args.out)
-    elif args.command == "sync-checkpoint":
-        from .persistence import require_checkpoint_sync, persist_checkpoint
-        require_checkpoint_sync(args.directory, formal=True)
-        print(json.dumps(persist_checkpoint(args.directory), indent=2))
+    elif args.command == "copy-checkpoint":
+        from .training import copy_checkpoint
+        copy_checkpoint(args.directory)
     else:
         if not probe_python_sandbox():
             raise SystemExit("sandbox probe did not pass")

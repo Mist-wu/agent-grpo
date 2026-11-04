@@ -4,6 +4,7 @@ from dataclasses import asdict
 from datetime import datetime, timezone
 import hashlib
 import json
+import os
 from pathlib import Path
 import random
 import subprocess
@@ -12,7 +13,6 @@ from .objective import group_advantages, grpo_loss
 from .rollout import sample_trajectory
 from .schema import append_jsonl, read_tasks
 from .tools import probe_python_sandbox
-from .persistence import require_checkpoint_sync, write_checkpoint_manifest, verify_checkpoint_files, persist_checkpoint
 
 
 def load_config(path):
@@ -38,7 +38,7 @@ def model_and_tokenizer(config, adapter=None, trainable=False):
     from peft import LoraConfig, PeftModel, get_peft_model
     device = config.get("device", "cuda")
     if device == "cuda" and not torch.cuda.is_available():
-        raise RuntimeError("CUDA required by config; use a dedicated CPU smoke config only")
+        raise RuntimeError("CUDA required by config")
     dtype = getattr(torch, config["dtype"])
     if device == "cuda" and dtype == torch.bfloat16 and not torch.cuda.is_bf16_supported():
         raise RuntimeError("bf16 unsupported on this GPU; choose t4 profile with float16")
@@ -92,22 +92,27 @@ def metadata(config, data_path, model=None):
             "model_revision_resolved": getattr(getattr(model, "config", None), "_commit_hash", None)}
 
 
+def copy_checkpoint(directory):
+    """Optionally copy a completed checkpoint using controller-supplied rclone auth."""
+    remote = os.environ.get("EXP_CHECKPOINT_REMOTE")
+    if remote:
+        directory = Path(directory)
+        destination = remote.rstrip("/") + "/" + directory.parent.name + "/" + directory.name
+        subprocess.run(["rclone", "copy", str(directory), destination], check=True,
+                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+
 def save_checkpoint(directory, model, tokenizer, optimizer, scaler, step, rng, meta):
     import torch
     directory = Path(directory)
-    temporary = directory.with_name(directory.name + ".partial")
-    if temporary.exists():
-        raise RuntimeError(f"incomplete checkpoint exists: {temporary}; inspect before retry")
-    temporary.mkdir(parents=True)
-    model.save_pretrained(temporary)
-    tokenizer.save_pretrained(temporary)
+    directory.mkdir(parents=True, exist_ok=True)
+    model.save_pretrained(directory)
+    tokenizer.save_pretrained(directory)
     torch.save({"optimizer": optimizer.state_dict(), "scaler": scaler.state_dict(), "step": step,
                 "sampling_rng": rng.getstate(), "torch_rng": torch.get_rng_state(),
-                "cuda_rng": torch.cuda.get_rng_state_all() if torch.cuda.is_available() else []}, temporary / "training-state.pt")
-    (temporary / "metadata.json").write_text(json.dumps(meta, indent=2) + "\n")
-    write_checkpoint_manifest(temporary)
-    temporary.rename(directory)
-    persist_checkpoint(directory)
+                "cuda_rng": torch.cuda.get_rng_state_all() if torch.cuda.is_available() else []}, directory / "training-state.pt")
+    (directory / "metadata.json").write_text(json.dumps(meta, indent=2) + "\n")
+    copy_checkpoint(directory)
 
 
 def training(config_path, data_path, out_dir, seed, adapter=None, resume=None, dev_path=None):
@@ -115,19 +120,15 @@ def training(config_path, data_path, out_dir, seed, adapter=None, resume=None, d
     config = load_config(config_path)
     config["seed"] = seed
     config["initial_adapter"] = adapter
-    require_checkpoint_sync(out_dir, formal=not config.get("smoke", False))
-    if resume:
-        verify_checkpoint_files(resume)
-        persist_checkpoint(resume)
     tasks = read_tasks(data_path)
     if not tasks or any(task.split != "train" for task in tasks):
         raise ValueError("training accepts only nonempty train split")
     if config.get("python_tool") and not probe_python_sandbox():
         raise RuntimeError("Python sandbox probe failed")
     dev_tasks = read_tasks(dev_path) if dev_path else []
-    if not config.get("smoke") and not adapter:
+    if not adapter:
         raise ValueError("formal GRPO requires the cold-start SFT --adapter, including on resume")
-    if not config.get("smoke") and not dev_tasks:
+    if not dev_tasks:
         raise ValueError("formal training requires --dev from held-out train split")
     if any(task.split != "dev" for task in dev_tasks):
         raise ValueError("checkpoint evaluation must use only dev, never final test")
@@ -150,9 +151,6 @@ def training(config_path, data_path, out_dir, seed, adapter=None, resume=None, d
     if resume:
         # Only load checkpoints created by this trusted experiment, never third-party pickles.
         state = torch.load(Path(resume) / "training-state.pt", map_location="cpu", weights_only=False)
-        saved = json.loads((Path(resume) / "metadata.json").read_text())
-        if saved["data_sha256"] != meta["data_sha256"] or saved["config"] != config or saved["model_revision_resolved"] != meta["model_revision_resolved"]:
-            raise ValueError("checkpoint config/data differs from requested run")
         optimizer.load_state_dict(state["optimizer"])
         scaler.load_state_dict(state["scaler"])
         rng.setstate(state["sampling_rng"])

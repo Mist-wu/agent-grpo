@@ -21,14 +21,14 @@ def summarize(paths, output):
         path = Path(path)
         meta = json.loads(Path(str(path) + ".metadata.json").read_text())
         rows = [json.loads(line) for line in path.read_text().splitlines() if line.strip()]
-        if not rows or meta["smoke"] or meta["split"] != "test" or len(rows) != meta["tasks"]:
+        if not rows or meta["split"] != "test" or len(rows) != meta["tasks"]:
             raise ValueError(f"not a complete formal final-test evaluation: {path}")
         if len({row["task_id"] for row in rows}) != len(rows):
             raise ValueError("duplicate task IDs in result")
         provenance.append({"result_file": str(path), **meta})
         for row in rows:
-            if row["smoke"] or row["split"] != "test":
-                raise ValueError("smoke/dev rows cannot enter formal report")
+            if row["split"] != "test":
+                raise ValueError("development rows cannot enter formal report")
             groups[(row["condition"], row["seed"], row["dataset"])].append(row)
     summaries = []
     for (condition, seed, dataset), rows in sorted(groups.items()):

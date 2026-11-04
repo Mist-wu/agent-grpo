@@ -1,6 +1,6 @@
 {
   "model": "Qwen/Qwen2.5-0.5B-Instruct",
-  "model_revision": "main",
+  "model_revision": "7ae557604adf67be50417f59c2c2f167def9a775",
   "device": "cuda",
   "dtype": "bfloat16",
   "device_profile": "l4",
@@ -18,6 +18,5 @@
   "checkpoint_every": 50,
   "python_tool": false,
   "sft_gradient_accumulation": 8,
-  "sft_learning_rate": 0.0002,
-  "smoke": false
+  "sft_learning_rate": 0.0002
 }

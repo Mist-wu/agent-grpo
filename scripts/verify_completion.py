@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Independent stdlib completion gate. Smoke fixtures cannot satisfy it."""
+"""Independent stdlib completion gate. Checks formal result coverage."""
 import hashlib
 import json
 from pathlib import Path
@@ -35,7 +35,7 @@ def verify(root=ROOT):
         require(result_file.exists(), f'raw evaluation absent: {result_file}')
         require(str(result_file.resolve()) not in files_seen, 'duplicate source included')
         files_seen.add(str(result_file.resolve()))
-        require(not source['smoke'] and source['split'] == 'test', 'smoke/development result')
+        require(source['split'] == 'test', 'development result')
         require(source['git_commit'] not in {'unknown', ''} and bool(source['model_revision_resolved']), 'commit/model provenance missing')
         require(source['gpu'] != 'none', 'formal result must come from GPU run')
         rows = [json.loads(line) for line in result_file.read_text().splitlines() if line.strip()]
@@ -43,7 +43,7 @@ def verify(root=ROOT):
         by_dataset = {}
         for row in rows:
             require(row['condition'] == source['condition'] and row['seed'] == source['seed'], 'raw row condition/seed mismatch')
-            require(row['split'] == 'test' and not row['smoke'] and row['source'].get('revision'), 'invalid row source')
+            require(row['split'] == 'test' and row['source'].get('revision'), 'invalid row source')
             by_dataset.setdefault(row['dataset'], []).append(row)
         for dataset, raw in by_dataset.items():
             match = [r for r in entries if r['condition'] == source['condition'] and r['seed'] == source['seed'] and r['dataset'] == dataset]
@@ -55,7 +55,7 @@ def verify(root=ROOT):
     for seed in {r['seed'] for r in entries if r['condition'] == 'grpo'}:
         run_dir = root / 'results' / f'grpo-{seed}'
         run = json.loads((run_dir / 'run.json').read_text())
-        require(not run['config'].get('smoke') and run['config']['steps'] >= 300, 'formal training incomplete/smoke')
+        require(run['config']['steps'] >= 300, 'formal training incomplete')
         logs = [json.loads(line) for line in (run_dir / 'train.jsonl').read_text().splitlines()]
         require(max(r['step'] for r in logs) >= run['config']['steps'], 'final GRPO step not recorded')
         require((run_dir / f"checkpoint-{run['config']['steps']:04d}" / 'adapter_config.json').exists(), 'final adapter missing')

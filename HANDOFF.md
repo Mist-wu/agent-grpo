@@ -1,59 +1,64 @@
-# E3 handoff
+# E3 formal handoff
 
-## Current state
+## State and scope
 
-Repository: `agent-grpo`. Implementation covers data preparation, tool rollouts, rejection-sampled cold-start data, assistant-action-token SFT, clipped GRPO, final evaluation, three-seed aggregation and independent completion verification. No GPU session or paid API was started. `runner-task.json` is present and correctly reports incomplete until real formal results exist.
+Implementation is ready for formal execution. No E3 GPU or paid API run has started, and formal metrics are absent. Dedicated preliminary-run scripts, results and debug configurations were removed at the user's request. Proceed directly to the formal pipeline.
 
-Validated locally:
+Existing implementation: strict Qwen tool protocol shared with E2; calculator, BM25 search and optional isolated Python; source-normalized dataset preparation; correct-trajectory collection; action-only SFT; clipped GRPO with frozen old/reference log probabilities; resumable checkpoints; final-test evaluation and three-seed summaries.
 
-- 23 tests: strict parser, malicious arithmetic rejection, masked tokens, source splitting, reward metrics, clipped ratio/KL numerics, detached old/reference gradients, real tiny Qwen2+LoRA backward and checkpoint round-trip.
-- Native Qwen2.5-0.5B tool-response suffix matches `apply_chat_template` (revision `7ae557604adf67be50417f59c2c2f167def9a775`).
-- Two real 0.5B CPU questions called calculator/search successfully; trace is `results/smoke-cpu.json`, explicitly a smoke fixture rather than a benchmark. Post-load inference took a few seconds per question with one CPU thread.
-- Smoke output exposed strict numeric-extraction rejection of correct prose. Explicit “answer/result is N” and boxed answers are now supported; arbitrary numbers from working remain rejected. HotpotQA token F1 remains sensitive to extra prose, as recorded by raw output.
+## Runtime setup and formal data
 
-## Next commands
-
-Use an allocated Colab runtime managed by the shared runner. Do not create a second runtime from this repository. On a CPU runtime, prepare and persist data to Drive:
+On the allocated runtime, with controller-provided rclone credentials/quota header:
 
 ```sh
+cd /content/agent-grpo
 python -m pip install -e '.[train]'
 python scripts/run.py prepare --out data
+rclone copy data gdrive:exp/datasets/e3
+export EXP_CHECKPOINT_REMOTE='gdrive:exp/runs/E3'
 ```
 
-Copy `data/` with verified rclone to `gdrive:exp/datasets/e3/`, then stage it into local `/content/data` for training. Native Colab Drive mounting is not available for unattended use. Run the L4 debug commands in README before any formal run. Inspect at least one full trajectory, check action masks and tool results, and examine memory over 20 steps. Do not demand monotonic policy loss/reward from noisy rollouts as a pass criterion.
+Use local `/content/agent-grpo/data` for training, not a Drive-mounted dataset. `prepare` writes 3,000 train + 100 dev rows each for GSM8K and HotpotQA, 500 final rows each, and full GSM-Symbolic main instances. It records actual dataset revision hashes, license and split provenance. Native Drive mounting is not part of unattended execution.
 
-After successful debug, run the formal README commands with A100/1.5B or disclosed L4/0.5B fallback. Model/tokenizer/adapter shapes must match. E2 adapter is a separate baseline; do not initialize cold-start SFT from it. If using 0.5B fallback, the original E2 1.5B adapter cannot be loaded into the 0.5B model; run the E2 baseline with its own 1.5B config and label model sizes in the comparison instead of pretending an architecture match.
+## Formal commands
 
-## Durable recovery (required in production)
-
-Root's Colab wrapper includes `exp_common` under `.experiment-common` and forwards private `RCLONE_CONFIG` plus approved `RCLONE_HEADER` (quota-project header) separately. Never write those credentials into the repository. Configure:
+Run A100 / 1.5B using `configs/a100.json`. If only L4 is available and root chooses the smaller model, use `configs/l4-full.json` and disclose 0.5B. Do not load the E2 1.5B adapter into a 0.5B model.
 
 ```sh
-export EXP_CHECKPOINT_SYNC='["python3","-m","exp_common.checkpoint","--source","{source}","--experiment","{experiment}","--run-id","{run_id}","--receipt","{receipt}"]'
+python scripts/run.py evaluate --config configs/a100.json --data data/test.jsonl --out results/eval-base-direct.jsonl --condition base-direct
+python scripts/run.py evaluate --config configs/a100.json --data data/test.jsonl --out results/eval-base-tools.jsonl --condition base-tools
+bash scripts/run_seeds.sh configs/a100.json
 ```
 
-Canonical placeholders match E7; aliases `{checkpoint_dir}`/`{checkpoint_id}` are also accepted. `{run_id}` identifies an immutable checkpoint generation (not merely the seed), and `{experiment}` expands to `E3`. Receipts live outside their source directory. The common helper uses `rclone copy --checksum` and `rclone check`; output is suppressed to avoid leaking credential diagnostics.
+The seed script independently samples correct cold-start trajectories, trains a new SFT adapter, evaluates it, performs 300 GRPO steps and evaluates final adapters for seeds 42/43/44. These stages need not wait for E2. E2 is a separate baseline, never the cold-start initialization:
 
-- Local `/content` storage is the working location. **Do not symlink results to a fictitious Drive mount.** SFT and GRPO call the sync hook after a fully closed, checksummed, atomically renamed checkpoint. Formal training and any `/content` checkpoint runs require the hook.
-- Success requires exit 0 **and** a fresh matching verified receipt. Before/after manifest hashes detect modification during sync. `durable-checkpoint.json` advances only on verified persistence. On failure the local source and prior durable pointer remain intact; the stage raises and stops. Do not stop/release that Colab runtime until retry or rescue is verified.
-- Retry upload without a model: `python scripts/run.py sync-checkpoint results/grpo-42/checkpoint-0050`.
-- Restore the destination from a verified receipt using `rclone copy gdrive:exp/runs/E3/<checkpoint_id> results/grpo-42/checkpoint-0050 --checksum`, then run `sync-checkpoint` and the normal `train --resume` command with original seed/config/data and cold-SFT adapter. Resume checks the file manifest and remote receipt before loading optimizer/RNG state.
-- GRPO saves adapter/optimizer/scaler/RNG; SFT checkpoints every 25 optimizer updates. A SFT checkpoint can serve directly as the resumed GRPO `--adapter` after it is downloaded; it is not necessary to depend on the convenience `adapter/` alias being persisted.
-- Collection resumes accepted IDs and attempt counts when source/config/seed metadata match. Post-restart sampling is not claimed bitwise identical; restart count is recorded. Controller must also archive raw collection/evaluation/log artifacts with verified rclone; the checkpoint hook guarantees checkpoint directories, not unrelated output files.
-- Evaluation resumes task IDs and refuses incompatible metadata. Incomplete JSONL or `.partial` directories require inspection. Do not relabel partial data as complete.
-- `scripts/run_seeds.sh` starts fresh stages; after interruption use individual resumable commands instead of rerunning all stages blindly.
+```sh
+# E2 exports <E2_ARTIFACTS>/main-seed42/adapter; working default /content/e2-artifacts/main-seed42/adapter.
+export E2_ADAPTER=/content/e2-artifacts/main-seed42/adapter
+python scripts/run.py evaluate --config configs/a100.json --data data/test.jsonl --out results/eval-e2.jsonl --condition e2-lora --adapter "$E2_ADAPTER"
+python scripts/run.py report results/eval-*.jsonl
+python scripts/verify_completion.py
+rclone copy results gdrive:exp/runs/E3/results
+```
 
-## Pending real work / gates
+## Simple checkpoints and resume
 
-1. GPU smoke and dependency compatibility on the allocated CUDA image. Direct pins in `pyproject.toml` were installed and tested on macOS; do not claim that proves Colab compatibility. Record actual torch/CUDA/GPU and pip freeze after first GPU success.
-2. Actual dataset download/source hashes (the script resolves dataset commits at run time) and source license retention. GSM-Symbolic has CC-BY-NC-ND; do not publish modified data.
-3. Approximately 500 correct training trajectories per cold-start seed; if the sampler cannot reach the target, it fails explicitly. Inspect extraction/prompt/quality before modifying protocol.
-4. All five comparisons; E2 adapter must be transferred once E2 completes. Base and cold/GRPO comparisons can proceed independently first.
-5. Three seeds for cold-SFT and GRPO, held-out dev checks, 500 GSM8K + 500 HotpotQA final questions plus full GSM-Symbolic main instances.
-6. Python tool is disabled until `probe-python` passes in Linux. Colab may forbid namespaces; retain calculator/search profile and disclose missing Python rather than execute it on the host.
-7. Compare against published GSM8K references (1.5B 73.2%, 0.5B 49.6%, Qwen report Table 10); fill, real cost ledger, ten before/after trajectory pairs and observed reward-exploitation analysis. Do not invent an example when none is observed.
-8. Run `python scripts/verify_completion.py`. It intentionally rejects partial, smoke or synthetic results and missing coverage.
+Saving is ordinary model/tokenizer output plus `torch.save` for optimizer/RNG; when `EXP_CHECKPOINT_REMOTE` is set, follow with `rclone copy`. No mandatory hook, receipt validation or durable-pointer state machine remains. Private `RCLONE_CONFIG` and approved `RCLONE_HEADER` come from root, never Git.
 
-## Known methodology choices
+Remote layout: `gdrive:exp/runs/E3/grpo-42/checkpoint-0050`. Copies failing with nonzero exit keep the local checkpoint. Retry with `python scripts/run.py copy-checkpoint results/grpo-42/checkpoint-0050`.
 
-GSM8K has no validation split; dev is held out of train. HotpotQA released validation is used only as final test. Direct baseline gets full local contexts; tool baselines get document titles plus BM25 retrieval. Report context truncation. Frozen KL reference is base-with-LoRA-disabled, not cold-SFT. Two optimizer updates per rollout enable actual clipping. Public contamination remains a limitation. There is no user interaction required for formal metrics, but manual qualitative trajectory interpretation must be honest and grounded in actual runs.
+```sh
+rclone copy gdrive:exp/runs/E3/grpo-42/checkpoint-0050 results/grpo-42/checkpoint-0050
+python scripts/run.py train --config configs/a100.json --data data/train.jsonl --dev data/dev.jsonl --out results/grpo-42 --seed 42 --adapter results/cold-42/adapter --resume results/grpo-42/checkpoint-0050
+```
+
+Also restore the original cold-SFT adapter or SFT checkpoint. SFT resumes using `sft --resume <checkpoint>` with the same original arguments. Collection and evaluation resume by task IDs. Archive collection data, evaluation rows and logs separately with rclone; checkpoint copying covers checkpoint directories only.
+
+## Required result work
+
+- Transfer E2 main adapter once available, run its independent comparison, and finish all seeds/conditions.
+- Compare measured GSM8K with Qwen report Table 10 references: 1.5B 73.2%, 0.5B 49.6%; prompt/shot/extraction differences must be disclosed.
+- Fill actual CU/session cost ledger and ten before/after trajectory pairs. Only report observed reward-exploitation examples, not invented ones.
+- Keep Python disabled if namespace isolation is unavailable; report calculator/search-only capability.
+- Preserve source licenses. GSM-Symbolic is CC-BY-NC-ND; do not publish modified data. Public dataset contamination remains a limitation.
+- `verify_completion.py` checks actual formal coverage, final steps/adapters and raw result consistency. It currently correctly reports incomplete because formal runs have not occurred.

@@ -10,7 +10,6 @@ from .schema import Trajectory, append_jsonl, read_tasks
 from .training import load_config, seed_all, model_and_tokenizer, token_logprobs, metadata
 from .rollout import sample_trajectory
 from .tools import probe_python_sandbox
-from .persistence import require_checkpoint_sync, verify_checkpoint_files, persist_checkpoint
 
 
 def collect(config_path, data_path, out_path, seed=42, target=500, attempts_per_question=2):
@@ -72,10 +71,6 @@ def collect(config_path, data_path, out_path, seed=42, target=500, attempts_per_
 def sft(config_path, trajectories_path, out_dir, seed=42, epochs=1, resume=None):
     import torch
     config = load_config(config_path)
-    require_checkpoint_sync(out_dir, formal=not config.get("smoke", False))
-    if resume:
-        verify_checkpoint_files(resume)
-        persist_checkpoint(resume)
     seed_all(seed)
     records = [json.loads(line) for line in Path(trajectories_path).read_text().splitlines() if line.strip()]
     if not records or any(row.get("source_split") != "train" or row["reward"]["correctness"] != 1 for row in records):
@@ -99,10 +94,6 @@ def sft(config_path, trajectories_path, out_dir, seed=42, epochs=1, resume=None)
     batches_per_epoch = (len(records) + accumulation - 1) // accumulation
     start_step = 0
     if resume:
-        previous = json.loads((Path(resume) / "metadata.json").read_text())
-        for key in ["config", "data_sha256", "model_revision_resolved", "seed", "epochs"]:
-            if previous[key] != meta[key]:
-                raise ValueError(f"SFT resume mismatch: {key}")
         state = torch.load(Path(resume) / "training-state.pt", map_location="cpu", weights_only=False)
         optimizer.load_state_dict(state["optimizer"])
         scaler.load_state_dict(state["scaler"])
@@ -144,7 +135,7 @@ def sft(config_path, trajectories_path, out_dir, seed=42, epochs=1, resume=None)
     (out / "run.json").write_text(json.dumps(meta, indent=2) + "\n")
 
 
-def evaluate(config_path, data_path, out_path, condition, seed=42, adapter=None, limit=None):
+def evaluate(config_path, data_path, out_path, condition, seed=42, adapter=None):
     import torch
     conditions = {"base-direct", "base-tools", "e2-lora", "cold-sft", "grpo"}
     if condition not in conditions:
@@ -159,18 +150,17 @@ def evaluate(config_path, data_path, out_path, condition, seed=42, adapter=None,
         raise ValueError("evaluation accepts a nonempty, unmixed dev or test split")
     if config.get("python_tool") and not probe_python_sandbox():
         raise RuntimeError("Python tool sandbox probe failed")
-    tasks = tasks[:limit] if limit else tasks
     out = Path(out_path)
     done = {}
     if out.exists():
         done = {row["task_id"]: row for row in map(json.loads, out.read_text().splitlines())}
     model, tokenizer = model_and_tokenizer(config, adapter)
     meta = metadata(config, data_path, model)
-    meta.update(condition=condition, seed=seed, adapter=adapter, split=tasks[0].split, smoke=bool(limit) or config.get("smoke", False), tasks=len(tasks))
+    meta.update(condition=condition, seed=seed, adapter=adapter, split=tasks[0].split, tasks=len(tasks))
     meta_path = Path(str(out) + ".metadata.json")
     if meta_path.exists():
         previous = json.loads(meta_path.read_text())
-        for key in ["config", "data_sha256", "condition", "seed", "adapter", "split", "smoke", "tasks", "model_revision_resolved"]:
+        for key in ["config", "data_sha256", "condition", "seed", "adapter", "split", "tasks", "model_revision_resolved"]:
             if previous[key] != meta[key]:
                 raise ValueError(f"cannot append incompatible evaluation: {key}")
     else:
@@ -187,4 +177,4 @@ def evaluate(config_path, data_path, out_path, condition, seed=42, adapter=None,
                      enable_python=config.get("python_tool", False))
         append_jsonl(out, {**asdict(trajectory), "dataset": task.dataset, "split": task.split,
                           "source": task.source, "seed": seed, "condition": condition,
-                          "seconds": time.monotonic() - started, "smoke": bool(limit) or config.get("smoke", False)})
+                          "seconds": time.monotonic() - started})
