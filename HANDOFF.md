@@ -1,5 +1,9 @@
 # E3 live handoff
 
+## 2026-11-05 05:19 JST: GRPO progress and E2 comparison capacity
+
+Existing run `E3-formal-independent-20261104-03` on `exp-e3-recovery-a100` reached seed42 GRPO **107/300 steps**. Downloaded actual records using the documented training-record command and copied them to `results/collected/seed42/grpo-42-train-steps1-107.jsonl`. Existing output subscriber remains active; no running command was resubmitted. Checkpoint100 and both intermediate dev results are already collected; full-test evaluations and remaining seeds remain unfinished. Retried `colab new -s exp-e3-e2-eval --gpu L4` and `colab new -s exp-e3-e2-eval --gpu A100`; both were refused (precondition failed), so no E2 comparison started. Shared usage: 63.52 CU remaining, 17.34 CU/hour across four assignments, not E3-only cost. Continue existing status/output and training polling below; collect checkpoint150/dev when produced.
+
 ## 2026-11-05 05:11 JST: GRPO progress
 
 Existing run `E3-formal-independent-20261104-03` on `exp-e3-recovery-a100` reached seed42 GRPO **104/300 steps**. Downloaded actual records using the documented training-record command and copied them to `results/collected/seed42/grpo-42-train-steps1-104.jsonl`. Existing output subscriber remains active; no command was resubmitted. Checkpoint100 and both intermediate dev results are already collected; full-test evaluations and remaining seeds remain unfinished. E2 comparison awaits capacity. Shared usage: 66.41 CU remaining, 17.34 CU/hour across four assignments, not E3-only cost. Continue polling existing status/output and training records below; collect checkpoint150/dev when produced.
