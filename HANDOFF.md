@@ -1,5 +1,9 @@
 # E3 live handoff
 
+## 2026-11-05 01:26 JST: GRPO progress
+
+The existing `E3-formal-independent-20261104-03` foreground run on `exp-e3-recovery-a100` reached seed 42 GRPO **step 20/300**. Downloaded its 20 real training-step records to `results/collected/seed42/grpo-42-train-steps1-20.jsonl`. No GRPO checkpoint or trained evaluation has been observed. The output subscriber remains active; no job was resubmitted. Shared account usage was 127.11 CU and 17.34 CU/hour across four assignments, not E3-specific. E2-adapter evaluation remains pending GPU capacity. Poll using the commands below.
+
 ## 2026-11-05 01:20 JST: GRPO progress
 
 The existing `E3-formal-independent-20261104-03` foreground run on `exp-e3-recovery-a100` reached seed 42 GRPO **step 17/300**. Downloaded its 17 real training-step records to `results/collected/seed42/grpo-42-train-steps1-17.jsonl`. No GRPO checkpoint or trained evaluation has been observed. The output subscriber remains active; no job was resubmitted. Shared account usage was 128.58 CU and 17.34 CU/hour across four assignments, not E3-specific. E2-adapter evaluation remains pending GPU capacity. Poll using the commands below.
