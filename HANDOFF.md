@@ -1,5 +1,9 @@
 # E3 live handoff
 
+## 2026-11-05 00:19 JST server observation
+
+Existing run `E3-formal-independent-20261104-03` continues seed 42 cold collection on `exp-e3-recovery-a100`. Its log reports **455/500 accepted from 3,171 attempts** and the corresponding completed Drive copy at 00:19:01 JST. SFT/GRPO have not started; the running script will transition to SFT after collection. The existing output subscriber remains active; do not resubmit. Shared account usage was 145.89 CU remaining, 17.34 CU/hour across four assignments, not E3-specific. E2's final adapter remains pending. Poll with the commands below.
+
 ## 2026-11-05 00:12 JST server observation
 
 The existing `E3-formal-independent-20261104-03` on `exp-e3-recovery-a100` remains in seed 42 cold collection. Output reports **404/500 accepted from 2,815 attempts**, with a corresponding completed Drive copy at 00:12:13 JST. SFT/GRPO have not started. The existing output subscriber is active; do not resubmit the running job. Shared account usage observed: 147.34 CU, 17.34 CU/hour across four assignments, not E3-specific. The E2 comparison remains pending its real final adapter. Poll using the commands below.
