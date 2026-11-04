@@ -1,0 +1,12 @@
+{
+  "observed_at_utc": "2026-11-04T17:32:18Z",
+  "run_id": "E3-formal-independent-20261104-03",
+  "session": "exp-e3-recovery-a100",
+  "checkpoint_step": 50,
+  "remote": "gdrive:exp/runs/E3/grpo-42/checkpoint-0050",
+  "observation_command": "rclone lsf gdrive:exp/runs/E3/grpo-42/ --max-depth 2",
+  "observed_files": ["README.md", "adapter_config.json", "adapter_model.safetensors", "added_tokens.json", "merges.txt", "metadata.json", "special_tokens_map.json", "tokenizer.json", "tokenizer_config.json", "training-state.pt", "vocab.json"],
+  "collected_metadata": "results/collected/seed42/grpo-42-checkpoint-0050-metadata.json",
+  "dev_evaluation": "Not yet observed: dev.jsonl download returned file not found after checkpoint observation.",
+  "final_training_complete": false
+}
