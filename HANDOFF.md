@@ -1,5 +1,9 @@
 # E3 live handoff
 
+## 2026-11-05 01:35 JST: GRPO progress and review scope
+
+Run `E3-formal-independent-20261104-03` on `exp-e3-recovery-a100` reports running and has produced seed 42 GRPO **24/300 steps**. Collected actual records at `results/collected/seed42/grpo-42-train-steps1-24.jsonl`; no GRPO checkpoint or trained evaluation has yet been observed. Subscriber `exp-iopub-e3-recovery.service` remains active; no job was resubmitted. Shared balance was 124.23 CU and rate 17.34 CU/hour across four assignments, not an E3-specific cost. E2 adapter evaluation remains pending capacity. Poll status and output using the commands below; download training records using the command in the 00:40 entry. The 2026-11-05 user scope accepts agent review, requests no new human annotation or delayed retests, and requires `human_validation_complete=false` and `human_validation_required=false`; disclose agent review and uncertainty and never represent it as human gold.
+
 ## 2026-11-05 01:26 JST: GRPO progress
 
 The existing `E3-formal-independent-20261104-03` foreground run on `exp-e3-recovery-a100` reached seed 42 GRPO **step 20/300**. Downloaded its 20 real training-step records to `results/collected/seed42/grpo-42-train-steps1-20.jsonl`. No GRPO checkpoint or trained evaluation has been observed. The output subscriber remains active; no job was resubmitted. Shared account usage was 127.11 CU and 17.34 CU/hour across four assignments, not E3-specific. E2-adapter evaluation remains pending GPU capacity. Poll using the commands below.
