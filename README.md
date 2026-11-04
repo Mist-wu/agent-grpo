@@ -27,6 +27,34 @@ python scripts/run.py evaluate --config configs/l4-debug.json --data data/dev.js
 
 Debug artifacts are marked smoke and cannot pass the formal verifier. Inspect reward changes, masks, trajectories and memory; a 20-step loss decline is not an unconditional correctness requirement for noisy policy optimization.
 
+## Required durable checkpoint hook
+
+Native Colab Drive mounting is **not** the unattended persistence path. Keep data and training outputs on the runtime disk, and configure the controller-provisioned rclone/common helper before SFT or GRPO:
+
+```sh
+export EXP_CHECKPOINT_SYNC='["python3","-m","exp_common.checkpoint","--source","{source}","--experiment","{experiment}","--run-id","{run_id}","--receipt","{receipt}"]'
+```
+
+The wrapper makes `exp_common` importable via `.experiment-common`/`PYTHONPATH`; it privately forwards `RCLONE_CONFIG` and the approved `RCLONE_HEADER` quota-project setting. Do not put credentials in this repository or hook argv. `EXP_DRIVE_REMOTE` defaults to `gdrive:exp/runs`; destinations are `/E3/<unique-checkpoint-id>`.
+
+Checkpoint files are closed, checksummed and atomically renamed before invoking the hook with `shell=False`. Both exit 0 and a fresh matching `state=verified` receipt are required; files are rechecked after copying. A failure stops the stage while retaining the new local checkpoint and the prior `durable-checkpoint.json`. Never release the runtime when `checkpoint-status.json` says `sync_failed`. SFT/GRPO formally require this hook; all `/content` checkpoint runs require it even in debug mode. Ordinary local CPU smoke may explicitly remain local-only.
+
+Retry a failed upload without loading a model:
+
+```sh
+python scripts/run.py sync-checkpoint results/grpo-42/checkpoint-0050
+```
+
+To resume on a fresh runtime, use the recorded destination in the verified receipt:
+
+```sh
+rclone copy gdrive:exp/runs/E3/REPLACE_WITH_CHECKPOINT_ID results/grpo-42/checkpoint-0050 --checksum
+python scripts/run.py sync-checkpoint results/grpo-42/checkpoint-0050
+# Then run train --resume with original config, seed, data and cold-SFT adapter.
+```
+
+Resume verifies the downloaded file manifest and re-verifies durable upload before loading optimizer state. Keep the cold-SFT final checkpoint too: it contains a complete adapter usable directly via `--adapter`, even if the convenience `adapter/` directory was not copied.
+
 For formal 1.5B training use `configs/a100.json` (300 steps). If A100 is unavailable, `configs/l4-full.json` runs all planned steps with 0.5B; disclose the model change. T4 debug selects fp16 with GradScaler. Do not mix model/tokenizer shapes or reference baselines across profiles.
 
 ```sh

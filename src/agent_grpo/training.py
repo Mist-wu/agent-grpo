@@ -12,6 +12,7 @@ from .objective import group_advantages, grpo_loss
 from .rollout import sample_trajectory
 from .schema import append_jsonl, read_tasks
 from .tools import probe_python_sandbox
+from .persistence import require_checkpoint_sync, write_checkpoint_manifest, verify_checkpoint_files, persist_checkpoint
 
 
 def load_config(path):
@@ -104,7 +105,9 @@ def save_checkpoint(directory, model, tokenizer, optimizer, scaler, step, rng, m
                 "sampling_rng": rng.getstate(), "torch_rng": torch.get_rng_state(),
                 "cuda_rng": torch.cuda.get_rng_state_all() if torch.cuda.is_available() else []}, temporary / "training-state.pt")
     (temporary / "metadata.json").write_text(json.dumps(meta, indent=2) + "\n")
+    write_checkpoint_manifest(temporary)
     temporary.rename(directory)
+    persist_checkpoint(directory)
 
 
 def training(config_path, data_path, out_dir, seed, adapter=None, resume=None, dev_path=None):
@@ -112,6 +115,10 @@ def training(config_path, data_path, out_dir, seed, adapter=None, resume=None, d
     config = load_config(config_path)
     config["seed"] = seed
     config["initial_adapter"] = adapter
+    require_checkpoint_sync(out_dir, formal=not config.get("smoke", False))
+    if resume:
+        verify_checkpoint_files(resume)
+        persist_checkpoint(resume)
     tasks = read_tasks(data_path)
     if not tasks or any(task.split != "train" for task in tasks):
         raise ValueError("training accepts only nonempty train split")

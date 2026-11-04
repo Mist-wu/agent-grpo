@@ -39,6 +39,8 @@ def main():
     report.add_argument("results", nargs="+")
     report.add_argument("--out", default="results/formal-summary.json")
     sub.add_parser("probe-python")
+    sync = sub.add_parser("sync-checkpoint")
+    sync.add_argument("directory")
     args = parser.parse_args()
     if args.command == "prepare":
         print(json.dumps(prepare(args.out, args.train_count, args.dev_count, args.test_count, args.seed), indent=2))
@@ -56,6 +58,10 @@ def main():
         evaluate(args.config, args.data, args.out, args.condition, args.seed, args.adapter, args.limit)
     elif args.command == "report":
         summarize(args.results, args.out)
+    elif args.command == "sync-checkpoint":
+        from .persistence import require_checkpoint_sync, persist_checkpoint
+        require_checkpoint_sync(args.directory, formal=True)
+        print(json.dumps(persist_checkpoint(args.directory), indent=2))
     else:
         if not probe_python_sandbox():
             raise SystemExit("sandbox probe did not pass")

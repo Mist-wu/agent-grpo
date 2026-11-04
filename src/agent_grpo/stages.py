@@ -10,6 +10,7 @@ from .schema import Trajectory, append_jsonl, read_tasks
 from .training import load_config, seed_all, model_and_tokenizer, token_logprobs, metadata
 from .rollout import sample_trajectory
 from .tools import probe_python_sandbox
+from .persistence import require_checkpoint_sync, verify_checkpoint_files, persist_checkpoint
 
 
 def collect(config_path, data_path, out_path, seed=42, target=500, attempts_per_question=2):
@@ -71,6 +72,10 @@ def collect(config_path, data_path, out_path, seed=42, target=500, attempts_per_
 def sft(config_path, trajectories_path, out_dir, seed=42, epochs=1, resume=None):
     import torch
     config = load_config(config_path)
+    require_checkpoint_sync(out_dir, formal=not config.get("smoke", False))
+    if resume:
+        verify_checkpoint_files(resume)
+        persist_checkpoint(resume)
     seed_all(seed)
     records = [json.loads(line) for line in Path(trajectories_path).read_text().splitlines() if line.strip()]
     if not records or any(row.get("source_split") != "train" or row["reward"]["correctness"] != 1 for row in records):
