@@ -1,0 +1,58 @@
+{
+  "source": "results/collected/seed42/grpo-42-train-steps1-150.jsonl",
+  "scope": "intermediate_training_descriptive_statistics",
+  "limitations": [
+    "Questions and sampled trajectories vary across steps; block means are not paired comparisons.",
+    "Training correctness mixes math correctness and HotpotQA F1; it is not held-out accuracy.",
+    "Step seconds exclude checkpoint copies and dev evaluation; they are not total runtime or CU cost.",
+    "One partial seed cannot establish final improvement or three-seed uncertainty."
+  ],
+  "training_step_seconds_sum": 19879.782752531002,
+  "blocks": [
+    {
+      "first_step": 1,
+      "last_step": 50,
+      "n_steps": 50,
+      "means": {
+        "reward": 0.4379838300797542,
+        "correctness": 0.39584320507975423,
+        "kl": 0.061264314790182656,
+        "tool_calls": 1.0759375,
+        "response_tokens": 117.0834375,
+        "zero_advantage_group_fraction": 0.0925,
+        "truncated_fraction": 0.0065625,
+        "seconds": 134.87800076119993
+      }
+    },
+    {
+      "first_step": 51,
+      "last_step": 100,
+      "n_steps": 50,
+      "means": {
+        "reward": 0.5585571800469877,
+        "correctness": 0.5124009300469877,
+        "kl": 0.07426714006393013,
+        "tool_calls": 1.021875,
+        "response_tokens": 158.0290625,
+        "zero_advantage_group_fraction": 0.1625,
+        "truncated_fraction": 0.015625,
+        "seconds": 129.74294876204013
+      }
+    },
+    {
+      "first_step": 101,
+      "last_step": 150,
+      "n_steps": 50,
+      "means": {
+        "reward": 0.549345288603504,
+        "correctness": 0.502970288603504,
+        "kl": 0.08187136510256096,
+        "tool_calls": 0.9925,
+        "response_tokens": 160.285625,
+        "zero_advantage_group_fraction": 0.16,
+        "truncated_fraction": 0.0196875,
+        "seconds": 132.97470552738
+      }
+    }
+  ]
+}

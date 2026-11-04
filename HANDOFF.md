@@ -1,5 +1,13 @@
 # E3 live handoff
 
+## 2026-11-05 07:02 JST: first150 training analysis
+
+Preserved original foreground A100 run/output subscriber; status running and output still ends at150/300. Downloaded dev.jsonl still contains only step50/100: no step150 dev result claimed. Generated actual small-CPU descriptive analysis with:
+```sh
+python3 scripts/summarize_training.py results/collected/seed42/grpo-42-train-steps1-150.jsonl --block-size 50 > results/collected/seed42/grpo-42-training-summary-step150.json
+```
+The three50-step blocks have mean reward **0.43798,0.55856,0.54935** and mean tool calls **1.07594,1.02188,0.99250**. Recorded training-step seconds sum to **19879.782752531002**, excluding checkpoint copies/dev evaluation, not total runtime/CU cost. Changing questions/trajectories make these descriptive training statistics, not paired held-out improvement; one partial seed does not establish final three-seed performance. E2 full-test control is already complete/collected and its L4 released; do not rerun it. Shared usage **35.01 CU**, **15.40 CU/hour**, three assignments, not E3-attributed charges. Next: continue original status/output/dev polling below and collect step150 dev results when produced; no duplicate evaluation/training.
+
 ## 2026-11-05 06:55 JST: E2 full-test control complete/collected; GRPO checkpoint150
 
 **E2-adapter control completed all6,000 tasks**, exit0, run `E3-e2-comparison-20261105-01`. Actual correctness: **GSM8K0 (n500), GSM-Symbolic0 (n5000), HotpotQA mean answer F1 0.0008895104895104895 (n500)**. All three dataset summaries record zero tool calls, zero E3 final-format compliance and zero truncation. Agent inspection of the first3 saved GSM rows found `I cannot complete this request with the available tools.`; do not infer refusal prevalence or causality from those three examples. This is a real negative transfer result under the fixed E3 prompt, not grounds for rerunning/tuning. Agent review and limitations are in `results/collected/e2-comparison/agent-review.md`; no human validation claimed/required.

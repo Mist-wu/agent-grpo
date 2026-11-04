@@ -90,6 +90,8 @@ Active attempt `E3-formal-independent-20261104-03` uses A100 session `exp-e3-rec
 
 2026-11-05 06:55 JST: independent L4 E2 full-test control completed6000/6000, actual run duration1238.0345270633698s includes install/restore/evaluation/report/copies, not pure inference time or attributable CU. Full outputs collected and L4 released. Original A100 GRPO150/300 and checkpoint150 saved on Drive; step150 dev not yet observed. Shared usage36.29CU, rate15.40CU/hour across3 assignments after release (17.34/hour across4 beforehand); not E3-attributed charges.
 
+2026-11-05 07:02 JST: original A100 run remains at recorded step150 while dev evaluation has not yet yielded new records. Actual first150 training-step seconds sum19879.782752531002, excluding checkpoints/dev and not total runtime/CU cost. Shared balance35.01CU, rate15.40CU/hour across3 assignments; not E3-attributed costs. E2 control already collected; its L4 remains released.
+
 ## Historical observations
 
 | Run | Session | Requested / allocated GPU | Job start | Latest stage | Observed CU cost |
