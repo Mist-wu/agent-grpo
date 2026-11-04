@@ -21,4 +21,4 @@ The reference policy for KL is the **base model with LoRA disabled**, including 
 
 ## Completion status
 
-No formal GPU run has occurred yet. Comparison against the published numerical baseline, real curves, and error/trajectory analysis remain unfinished. Public GSM8K/HotpotQA contamination is possible; GSM-Symbolic is derived from GSM8K and is a complementary robustness check, not proof of contamination absence.
+A formal A100 campaign is running. Its completed 500-question GSM8K base-direct subset scored 319/500 (63.8%) under v2 math extraction; the original strict-v1 score was 15/500, and only 2/500 outputs conformed to the final-tag format. All original outputs/scores remain available. The complete 6,000-question condition and all training comparisons are unfinished. Our zero-shot tool-oriented system prompt, 512-token turn budget and subset differ from published benchmark settings, so this is not a reproduced Table 10 score. See [scoring versions](scoring.md). Public GSM8K/HotpotQA contamination is possible; GSM-Symbolic is derived from GSM8K and is a complementary robustness check, not proof of contamination absence.

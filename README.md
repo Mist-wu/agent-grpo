@@ -8,6 +8,7 @@ Use an already allocated GPU runtime assigned by root; run commands from its unp
 
 ```sh
 python -m pip install -e '.[train]'
+python -m pip uninstall -y torchvision torchaudio
 python scripts/run.py prepare --out data
 export RCLONE_HEADER='X-Goog-User-Project:pi-workspace-wu-4b7f3a'
 export EXP_CHECKPOINT_REMOTE='gdrive:exp/runs/E3'
@@ -26,11 +27,15 @@ python scripts/run.py evaluate --config configs/a100.json --data data/test.jsonl
 export E2_ADAPTER=/content/e2-artifacts/main-seed42/adapter
 python scripts/run.py evaluate --config configs/a100.json --data data/test.jsonl --out results/eval-e2.jsonl --condition e2-lora --adapter "$E2_ADAPTER"
 bash scripts/run_seeds.sh configs/a100.json
-python scripts/run.py report results/eval-*.jsonl
+mkdir -p results/scored-v2
+for path in results/eval-*.jsonl; do
+  python scripts/run.py rescore --data data/test.jsonl --input "$path" --out "results/scored-v2/$(basename "$path")"
+done
+python scripts/run.py report results/scored-v2/eval-*.jsonl
 python scripts/verify_completion.py
 ```
 
-The seed script performs collection, SFT, SFT evaluation, GRPO, and GRPO evaluation for seeds 42/43/44. It can begin independently of E2; E2's adapter is only required for the separate E2 baseline and final complete comparison.
+The current A100 uses direct batch16 and subsequent tool/collection batches32; GRPO groups stay at eight responses and four groups are generated together. The seed script performs collection, SFT, SFT evaluation, GRPO, and GRPO evaluation for seeds 42/43/44. It can begin independently of E2; E2's adapter is only required for the separate E2 baseline and final complete comparison.
 
 ## Recovery
 
@@ -52,7 +57,7 @@ SFT checkpoints every 25 updates and supports `sft --resume <checkpoint>` with t
 - Frozen old-policy action log probabilities, clipped current/old ratios, and base-reference k3 KL implement the GRPO objective. LoRA/base dropout is zero and sampling temperature is 1 without top-k/top-p truncation.
 - Loss is averaged over generated action tokens per trajectory, then over trajectories. Prompt and inserted tool tokens are not loss targets. One trajectory per gradient microbatch limits GPU memory.
 - The reference for KL is the base model with LoRA disabled; cold-start SFT is the policy initialization, not the reference model.
-- Reward is answer correctness plus one per-trajectory parsing bonus of 0.1, minus 0.05 per tool call; at most four calls. Numeric extraction accepts final tags, GSM8K markers, boxed answers and explicit answer/result clauses. HotpotQA uses normalized token F1.
+- Reward is answer correctness plus one per-trajectory parsing bonus of 0.1, minus 0.05 per tool call; at most four calls. Math correctness uses the pinned Qwen last-number extraction rule and Decimal exact equality. Original strict-v1 scores and final-tag compliance are reported separately. HotpotQA keeps normalized answer-token F1. See [scoring versions](docs/scoring.md).
 - Cold-start SFT uses correct trajectories from the training split. Checkpoint evaluations use held-out dev, never final test.
 - Direct HotpotQA baseline sees full context; tool conditions see titles and use question-local BM25 retrieval. Report truncation and this prompt difference.
 - Calculator uses bounded AST arithmetic. Python stays disabled unless Linux bubblewrap isolation passes; it never falls back to unisolated host execution.

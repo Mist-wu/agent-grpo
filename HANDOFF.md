@@ -23,7 +23,7 @@ E2 reports that its pending main adapter is trained from the Glaive fallback (tr
 - Runtime root: `/content/experiment-runs/E3-formal-independent-20261104-02`; code under `workspace/`, main output at `output.log`.
 - Local downloaded outputs: `results/live-attempt02/`. This is a partial live snapshot, not a completed report.
 - Original attempt `01` failed at dependency import (rc1, 246.05 seconds). Attempt `02`'s initial serial segment was intentionally interrupted after 134 completed rows, then resumed in the same directory with batch16. `serial-status.json` records that planned interruption as rc143; `batching-transition.json` records the reason, retained-row count and SHA256. Neither record should be mistaken for the current running state.
-- Base-direct uses batch16; subsequent tool evaluations use batch8. Cold collection batches up to eight questions, GRPO samples each existing group of eight jointly. Dataset sizes, 500 cold examples, seeds 42/43/44, 300 GRPO steps and the objective are unchanged. See `docs/execution.md` for numerical and timing details.
+- Base-direct uses batch16; subsequent tool evaluations and cold collection use batch32. GRPO combines four complete groups of eight trajectories per inference batch, retaining Q8 and G8. Dataset sizes, 500 cold examples, seeds 42/43/44, 300 GRPO steps and the objective are unchanged. See `docs/execution.md` for numerical and timing details.
 - E2 adapter comparison still waits for its actual export. The independent cold-SFT/GRPO pipeline does not wait for E2.
 
 The Mac E3 agent owns this job. Do not submit another copy, allocate another session, or start server pi for this task. No SSH connection needs to remain open for the detached pipeline to continue. The current direct process was left running while later-stage source was updated.
@@ -86,7 +86,11 @@ The seed script independently samples correct cold-start trajectories, trains a 
 # E2 exports <E2_ARTIFACTS>/main-seed42/adapter; working default /content/e2-artifacts/main-seed42/adapter.
 export E2_ADAPTER=/content/e2-artifacts/main-seed42/adapter
 python scripts/run.py evaluate --config configs/a100.json --data data/test.jsonl --out results/eval-e2.jsonl --condition e2-lora --adapter "$E2_ADAPTER"
-python scripts/run.py report results/eval-*.jsonl
+mkdir -p results/scored-v2
+for path in results/eval-*.jsonl; do
+  python scripts/run.py rescore --data data/test.jsonl --input "$path" --out "results/scored-v2/$(basename "$path")"
+done
+python scripts/run.py report results/scored-v2/eval-*.jsonl
 python scripts/verify_completion.py
 rclone copy results gdrive:exp/runs/E3/results
 ```
@@ -105,6 +109,8 @@ python scripts/run.py train --config configs/a100.json --data data/train.jsonl -
 Also restore the original cold-SFT adapter or SFT checkpoint. SFT resumes using `sft --resume <checkpoint>` with the same original arguments. Collection and evaluation resume by task IDs. Archive collection data, evaluation rows and logs separately with rclone; checkpoint copying covers checkpoint directories only.
 
 ## Required result work
+
+- Uniformly rescore every condition to v2 without regenerating or overwriting original outputs; retain v1 scores and format compliance. See `docs/scoring.md`.
 
 - Transfer E2 main adapter once available, run its independent comparison, and finish all seeds/conditions.
 - Compare measured GSM8K with Qwen report Table 10 references: 1.5B 73.2%, 0.5B 49.6%; prompt/shot/extraction differences must be disclosed.
