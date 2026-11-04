@@ -1,0 +1,23 @@
+{
+  "model": "Qwen/Qwen2.5-0.5B-Instruct",
+  "model_revision": "main",
+  "device": "cuda",
+  "dtype": "float16",
+  "device_profile": "t4",
+  "temperature": 1.0,
+  "max_new_tokens": 512,
+  "max_sequence_length": 4096,
+  "group_size": 4,
+  "questions_per_step": 1,
+  "update_epochs": 2,
+  "steps": 20,
+  "learning_rate": 1e-05,
+  "lora_rank": 16,
+  "kl_beta": 0.04,
+  "clip_epsilon": 0.2,
+  "checkpoint_every": 10,
+  "python_tool": false,
+  "sft_gradient_accumulation": 8,
+  "sft_learning_rate": 0.0002,
+  "smoke": true
+}

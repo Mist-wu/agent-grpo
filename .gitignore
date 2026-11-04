@@ -1,0 +1,14 @@
+.env
+.env.*
+!.env.example
+.venv/
+__pycache__/
+*.egg-info/
+data/
+checkpoints/
+logs/
+*.pt
+*.safetensors
+.cache/
+results/**/adapter/
+results/**/checkpoint-*/
