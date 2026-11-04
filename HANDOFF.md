@@ -1,5 +1,9 @@
 # E3 live handoff
 
+## 2026-11-05 01:47 JST: GRPO and E2 comparison capacity
+
+Existing run `E3-formal-independent-20261104-03` on `exp-e3-recovery-a100` reached seed 42 GRPO **30/300 steps**; collected actual records at `results/collected/seed42/grpo-42-train-steps1-30.jsonl`. The output subscriber remains active; no GRPO checkpoint or trained evaluation has yet been observed. Retried separate E2-adapter comparison allocation with `colab new -s exp-e3-e2-eval --gpu L4` and `colab new -s exp-e3-e2-eval --gpu A100`; both returned allocation refused (precondition failed), and no evaluation was started. Do not interrupt the active training. Shared account balance was 119.90 CU at 17.34 CU/hour across four assignments, not E3-specific cost. Continue polling using the commands below.
+
 ## 2026-11-05 01:41 JST: GRPO progress
 
 Existing foreground run `E3-formal-independent-20261104-03` on `exp-e3-recovery-a100` produced seed 42 GRPO **27/300 steps**. Downloaded the real training records to `results/collected/seed42/grpo-42-train-steps1-27.jsonl`; the existing output subscriber remains active. No GRPO checkpoint or trained evaluation has been observed, and the E2 adapter comparison remains pending GPU capacity. Shared account balance was 122.77 CU at 17.34 CU/hour across four assignments, not an E3-specific cost. No job was resubmitted. Poll using the status/output and training-record download commands below.
