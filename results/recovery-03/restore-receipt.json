@@ -1,0 +1,9 @@
+{
+  "recovered_from": "gdrive:exp/runs/E3/snapshots/cold-before-batch128",
+  "accepted": 91,
+  "attempted": 620,
+  "sha256": "dae144863cccd60b6f55dedb6d3ab2e1ce9c8a9ff889932e9c3634aaab1b2748",
+  "previous_runtime_lost": true,
+  "last_observed_log_accepted": 350,
+  "last_observed_log_is_not_recovered_trajectories": true
+}
