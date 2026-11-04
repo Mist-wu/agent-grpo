@@ -86,6 +86,9 @@ def metadata(config, data_path, model=None):
         return p.stdout.strip() if p.returncode == 0 else "unknown"
     commit = os.environ.get("EXP_COMMIT") or os.environ.get("EXPERIMENT_COMMIT") or git(["rev-parse", "HEAD"])
     dirty = os.environ.get("EXP_DIRTY", os.environ.get("EXPERIMENT_DIRTY"))
+    runtime_revision = Path(__file__).resolve().parents[2] / ".runtime-revision"
+    if runtime_revision.exists():
+        commit, dirty = runtime_revision.read_text().strip(), "false"
     return {"created_at": datetime.now(timezone.utc).isoformat(), "git_commit": commit,
             "git_dirty": dirty.lower() == "true" if dirty is not None else bool(git(["status", "--porcelain"])), "config": config,
             "data_sha256": hashlib.sha256(Path(data_path).read_bytes()).hexdigest(),

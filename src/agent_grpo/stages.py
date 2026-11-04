@@ -8,7 +8,7 @@ import sys
 import time
 from .schema import Trajectory, append_jsonl, read_tasks
 from .training import load_config, seed_all, model_and_tokenizer, token_logprobs, metadata
-from .rollout import sample_trajectory, batch_direct_trajectories
+from .rollout import sample_trajectory, batch_direct_trajectories, batch_tool_trajectories
 from .tools import probe_python_sandbox
 
 
@@ -170,16 +170,19 @@ def evaluate(config_path, data_path, out_path, condition, seed=42, adapter=None,
         raise ValueError("result includes unexpected task IDs")
     execution = {"created_at": meta["created_at"], "git_commit": meta["git_commit"],
                  "existing_rows": len(done), "requested_batch_size": batch_size,
-                 "effective_batch_size": batch_size if condition == "base-direct" else 1}
+                 "effective_batch_size": batch_size}
     append_jsonl(str(out) + ".executions.jsonl", execution)
     pending = [task for task in tasks if task.id not in done]
-    batch_size = batch_size if condition == "base-direct" else 1
     for offset in range(0, len(pending), batch_size):
         batch = pending[offset:offset + batch_size]
         started = time.monotonic()
         if condition == "base-direct" and batch_size > 1:
             trajectories = batch_direct_trajectories(model, tokenizer, batch,
                 max_new_tokens=config["max_new_tokens"], max_sequence_length=config["max_sequence_length"])
+        elif batch_size > 1:
+            trajectories = batch_tool_trajectories(model, tokenizer, batch,
+                max_new_tokens=config["max_new_tokens"], max_sequence_length=config["max_sequence_length"],
+                enable_python=config.get("python_tool", False))
         else:
             trajectories = [sample_trajectory(model, tokenizer, batch[0], temperature=0,
                 tools_enabled=condition != "base-direct", max_new_tokens=config["max_new_tokens"],

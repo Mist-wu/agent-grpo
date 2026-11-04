@@ -134,3 +134,101 @@ def batch_direct_trajectories(model, tokenizer, tasks, *, max_new_tokens=512, ma
             [{"assistant": text, "generated_tokens": len(generated), "tools": []}],
             reward(tasks[index], text, 0, 0), truncated)
     return trajectories
+
+
+def batch_tool_trajectories(model, tokenizer, tasks, *, temperature=0, max_new_tokens=512,
+                            max_tool_calls=4, max_sequence_length=4096, enable_python=False):
+    """Batch model turns while keeping tool execution and termination per trajectory."""
+    import torch
+    from transformers import StoppingCriteria, StopStringCriteria
+
+    class FinishLengths(StoppingCriteria):
+        def __init__(self, width, budgets, device):
+            self.width = width
+            self.budgets = torch.tensor(budgets, device=device)
+            self.lengths = torch.zeros(len(budgets), dtype=torch.long, device=device)
+            self.tool_end = StopStringCriteria(tokenizer, ["</tool_call>"])
+
+        def __call__(self, input_ids, scores, **kwargs):
+            count = input_ids.shape[1] - self.width
+            finished = (input_ids[:, -1] == tokenizer.eos_token_id) | (count >= self.budgets)
+            finished |= self.tool_end(input_ids, scores)
+            self.lengths[(self.lengths == 0) & finished] = count
+            return finished
+
+    states = []
+    for task in tasks:
+        ids = initial_prompt(tokenizer, task, True, enable_python)
+        states.append({"ids": ids, "mask": [False] * len(ids), "turns": [], "calls": 0,
+                       "parsed_calls": 0, "final_text": "", "truncated": False, "active": True})
+    model.eval()
+    device = next(model.parameters()).device
+    for _ in range(max_tool_calls + 1):
+        active = []
+        budgets = []
+        for index, state in enumerate(states):
+            if not state["active"]:
+                continue
+            room = max_sequence_length - len(state["ids"])
+            if room <= 0:
+                state.update(active=False, truncated=True)
+            else:
+                active.append(index)
+                budgets.append(min(max_new_tokens, room))
+        if not active:
+            break
+        width = max(len(states[index]["ids"]) for index in active)
+        inputs = torch.full((len(active), width), tokenizer.pad_token_id, dtype=torch.long, device=device)
+        attention = torch.zeros_like(inputs)
+        for row, index in enumerate(active):
+            ids = states[index]["ids"]
+            inputs[row, -len(ids):] = torch.tensor(ids, dtype=torch.long, device=device)
+            attention[row, -len(ids):] = 1
+        finish = FinishLengths(width, budgets, device)
+        with torch.no_grad():
+            outputs = model.generate(inputs, attention_mask=attention, max_new_tokens=max(budgets),
+                do_sample=temperature > 0, pad_token_id=tokenizer.pad_token_id, eos_token_id=tokenizer.eos_token_id,
+                use_cache=True, repetition_penalty=1.0, no_repeat_ngram_size=0, num_beams=1,
+                temperature=temperature if temperature > 0 else None,
+                top_p=1.0 if temperature > 0 else None, top_k=0 if temperature > 0 else None,
+                stopping_criteria=[finish])
+        lengths = finish.lengths.tolist()
+        for row, index in enumerate(active):
+            state, task = states[index], tasks[index]
+            generated = outputs[row, width:width + lengths[row]].tolist()
+            append_segment(state["ids"], state["mask"], generated, True)
+            text = tokenizer.decode(generated, skip_special_tokens=True)
+            state["final_text"] = text
+            turn = {"assistant": text, "generated_tokens": len(generated), "tools": []}
+            state["turns"].append(turn)
+            try:
+                requests = parse_tool_calls(text)
+            except ValueError as exc:
+                turn["parse_error"] = str(exc)
+                state["active"] = False
+                continue
+            if not requests:
+                state["truncated"] |= len(generated) == budgets[row] and (not generated or generated[-1] != tokenizer.eos_token_id)
+                state["active"] = False
+                continue
+            results = []
+            for request in requests:
+                if state["calls"] >= max_tool_calls:
+                    turn["tool_limit_reached"] = True
+                    break
+                state["calls"] += 1
+                state["parsed_calls"] += 1
+                output = execute(request, task.documents, enable_python)
+                turn["tools"].append({"call": request, "response": output})
+                results.append(output)
+            if not results:
+                state["active"] = False
+                continue
+            suffix = tool_suffix(tokenizer, results[0] if len(results) == 1 else results, generated)
+            if len(state["ids"]) + len(suffix) >= max_sequence_length:
+                state.update(active=False, truncated=True)
+            else:
+                append_segment(state["ids"], state["mask"], suffix, False)
+    return [Trajectory(task.id, state["ids"], state["mask"], state["final_text"], state["turns"],
+            reward(task, state["final_text"], state["calls"], state["parsed_calls"]), state["truncated"])
+            for task, state in zip(tasks, states)]
