@@ -1,5 +1,9 @@
 # E3 live handoff
 
+## 2026-11-05 07:21 JST: step150 dev complete; training resumed
+
+Existing original A100 run completed step150 dev and reached **152/300 seed42 GRPO steps**. Actual step150 results: **GSM8K correctness0.76 (n50)** and **HotpotQA mean answer F1 0.5036031746031746 (n50)**. Downloaded using the existing status/output/dev/train commands and copied actual records to `results/collected/seed42/grpo-42-dev-through-step150.jsonl` and `grpo-42-train-steps1-152.jsonl`. Step100 HotpotQA was0.4676031746031746; these aggregates are descriptive intermediate dev results, not paired significance, final-test performance or demonstrated SFT improvement. Checkpoint150 metadata/receipt already collected. Existing foreground job/output subscriber preserved without resubmission. E2 full-test control remains complete/collected, L4 released. Shared usage **29.87 CU**, **15.40 CU/hour**, three assignments, not E3-attributed charges. Continue original status/output/train polling below; collect checkpoint200/dev when produced. Remaining seeds, full trained comparisons and final trajectory analysis unfinished.
+
 ## 2026-11-05 07:14 JST: existing step150 evaluation still pending
 
 Downloaded original status/output/dev/train using the existing commands. Training remains at **150/300**, dev file has step150 GSM8K0.76/n50 but **no step150 HotpotQA result or step151**; no new measurement is claimed. Existing output subscriber remains active and no command was resubmitted. Checkpoint150 and first150 training analysis already collected; E2 full-test control complete/collected and L4 released. Shared balance **31.13 CU**, rate **15.40 CU/hour**, three assignments; not E3-attributed cost. Next: repeat existing status/output/dev downloads below; collect HotpotQA dev and resumed training when produced, without duplicate evaluation. Remaining seeds/full trained comparisons and final trajectory analysis still unfinished.
