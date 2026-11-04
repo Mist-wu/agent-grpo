@@ -6,6 +6,8 @@ PENDING final CU accounting; do not infer zero cost from missing balances.
 
 Active attempt `E3-formal-independent-20261104-03` uses A100 session `exp-e3-recovery-a100`, source `1e9b43d341a99b0f0499bfd0e4e1835f6500a987`, and the unchanged `configs/a100.json`. Seed42 cold collection and 63-step SFT are complete; actual GRPO records now cover 34/300 steps. `colab usage` reported **118.46 CU remaining, 17.34 CU/hour, four active assignments**. These are shared-account observations, not measured E3-only cost. Final E3 CU attribution and runtime end remain unavailable. This observation and current `HANDOFF.md` supersede the historical stage descriptions below; preserve the existing job and output client.
 
+2026-11-05 02:04 JST: the same run has produced 37/300 seed42 GRPO steps. `colab usage`: 115.58 CU remaining, 17.34 CU/hour, four active assignments; shared-account values only, not E3-attributed charges. No runtime end or final E3 cost yet.
+
 ## Historical observations
 
 | Run | Session | Requested / allocated GPU | Job start | Latest stage | Observed CU cost |
