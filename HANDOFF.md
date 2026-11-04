@@ -1,5 +1,11 @@
 # E3 live handoff
 
+## 2026-11-05 00:49 JST: E2 comparison capacity and GRPO
+
+The existing independent A100 run `E3-formal-independent-20261104-03` remains running and has completed GRPO **5/300 steps**, as shown by the downloaded output and `results/collected/seed42/grpo-42-train-steps1-5.jsonl`. No GRPO checkpoint has yet been observed. Its real output subscriber is active and has not been replaced. Shared account usage at 00:48 was 137.24 CU and 17.34 CU/hour across four assignments, not an E3-specific cost.
+
+The required E2 seed42 adapter is now available (see below). Tried to allocate a separate runtime for its independent evaluation without disturbing the existing training using `colab new -s exp-e3-e2-eval --gpu L4` and `colab new -s exp-e3-e2-eval --gpu A100`; both returned allocation refused (precondition failed). No evaluation was started. Retry when Colab permits, or run on the existing E3 runtime after its foreground task ends; do not interrupt it. Restore the actual adapter with `rclone copy gdrive:exp/runs/E2/E2-main-resume-20261104-03-main-seed42-adapter /content/e2-artifacts/main-seed42/adapter` on the assigned runtime and evaluate it on the full test set as the separate `e2-lora` condition. Poll the current independent run with the commands below.
+
 ## 2026-11-05 00:44 JST: E2 seed 42 adapter available
 
 E2 main seed 42 completed training and its actual adapter was copied to `gdrive:exp/runs/E2/E2-main-resume-20261104-03-main-seed42-adapter` at 15:43:44 UTC (rclone exit 0). The matching train record and copy receipt are in `/srv/exp-runner/repos/toolcall-lora/results/main-seed42.train.json` and `/srv/exp-runner/repos/toolcall-lora/results/main-seed42.adapter-receipt.json`. Use this for E3's required E2-adapter comparison when the existing independent E3 run permits; do not interrupt or duplicate the running GRPO pipeline. E2's evaluation and remaining seeds still run.
