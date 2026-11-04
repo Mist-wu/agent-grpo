@@ -1,5 +1,9 @@
 # E3 live handoff
 
+## 2026-11-05 00:44 JST: E2 seed 42 adapter available
+
+E2 main seed 42 completed training and its actual adapter was copied to `gdrive:exp/runs/E2/E2-main-resume-20261104-03-main-seed42-adapter` at 15:43:44 UTC (rclone exit 0). The matching train record and copy receipt are in `/srv/exp-runner/repos/toolcall-lora/results/main-seed42.train.json` and `/srv/exp-runner/repos/toolcall-lora/results/main-seed42.adapter-receipt.json`. Use this for E3's required E2-adapter comparison when the existing independent E3 run permits; do not interrupt or duplicate the running GRPO pipeline. E2's evaluation and remaining seeds still run.
+
 ## 2026-11-05 00:40 JST server observation
 
 The existing `E3-formal-independent-20261104-03` on `exp-e3-recovery-a100` completed seed 42 cold SFT: downloaded `run.json` and all 63 training-step records, and observed `adapter/` and checkpoints 0025, 0050, 0063 on `gdrive:exp/runs/E3/cold-42/`. The same run then completed **GRPO step 1/300**: reward 0.3750372, correctness 0.352381, KL 0.0268918, 151.26 seconds. These are single-step training metrics, not final evaluation. The existing output subscriber remains active; do not resubmit. Shared account usage was 140.14 CU, 17.34 CU/hour across four assignments, not E3-specific. E2's final adapter is still pending.
