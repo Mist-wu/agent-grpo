@@ -18,7 +18,7 @@ E2 reports that its pending main adapter is trained from the Glaive fallback (tr
 
 - Session: `exp-e3-formal`; endpoint `gpu-a100-s-ass1c0-fz5a9fduhlbu`; GPU `NVIDIA A100-SXM4-40GB`.
 - Active run ID remains `E3-formal-independent-20261104-02`, wrapper PID `10606` after the planned batching recovery.
-- Base-direct running source: `0f237cd117e6ffabe44f394b80534769edf01384`, clean. Later stages are deployed from `554b909bf1c05191027406a4412e3f417c448b08`, recorded by `workspace/.runtime-revision` and `source-updates.jsonl`.
+- Base-direct running source: `0f237cd117e6ffabe44f394b80534769edf01384`, clean. Later stages use the deployed commit recorded in `workspace/.runtime-revision` and `source-updates.jsonl`; they include batch32, scoring v2 and closed-output Drive copies.
 - Configuration `configs/a100.json`, model `Qwen/Qwen2.5-1.5B-Instruct`, revision `989aa7980e4cf806f80c7fef2b1adb7bc71aa306`.
 - Runtime root: `/content/experiment-runs/E3-formal-independent-20261104-02`; code under `workspace/`, main output at `output.log`.
 - Local downloaded outputs: `results/live-attempt02/`. This is a partial live snapshot, not a completed report.
