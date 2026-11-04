@@ -2,7 +2,7 @@
 
 ## State and scope
 
-The Mac agents now control the existing Colab runtime directly; server pi is stopped. E3 remains RUNNING in attempt `E3-formal-independent-20261104-02`. The latest downloaded formal result contained 630/6,000 base-direct rows (500 GSM8K, 130 HotpotQA). Of these, 496 batched rows averaged 0.975 seconds/question; long-run throughput varies with question length. Cold-SFT and GRPO have not yet been reached, and complete formal results do not exist. Dedicated preliminary-run scripts, results and debug configurations were removed at the user's request.
+The Mac agents control the existing Colab runtime directly; server pi is stopped. E3 is RUNNING in the same attempt `E3-formal-independent-20261104-02`, now using the priority stage script. The direct segment is paused with 2,102/6,000 rows retained: all 500 GSM8K, all 500 HotpotQA and 1,102 GSM-Symbolic. The latest downloaded core base-tools result contained 128/1,000 rows under scoring v2, with real multi-turn tool calls. Full training and the remaining final-test evaluations are not complete.
 
 Existing implementation: strict Qwen tool protocol shared with E2; calculator, BM25 search and optional isolated Python; source-normalized dataset preparation; correct-trajectory collection; action-only SFT; clipped GRPO with frozen old/reference log probabilities; resumable checkpoints; final-test evaluation and three-seed summaries.
 
@@ -17,16 +17,16 @@ E2 reports that its pending main adapter is trained from the Glaive fallback (tr
 ## Active Mac control
 
 - Session: `exp-e3-formal`; endpoint `gpu-a100-s-ass1c0-fz5a9fduhlbu`; GPU `NVIDIA A100-SXM4-40GB`.
-- Active run ID remains `E3-formal-independent-20261104-02`, wrapper PID `10606` after the planned batching recovery.
-- Base-direct running source: `0f237cd117e6ffabe44f394b80534769edf01384`, clean. Later stages use the deployed commit recorded in `workspace/.runtime-revision` and `source-updates.jsonl`; they include batch32, scoring v2 and closed-output Drive copies.
+- Active run ID remains `E3-formal-independent-20261104-02`, wrapper PID `18199` after the planned priority reorder.
+- Active priority source: `9a3c642747c28dc94a81296b421b8669788f2e80`, clean, executing `bash scripts/run_priority.sh configs/a100.json`. The retained direct segment used `0f237cd`; original generation provenance remains in its files. The live `.runtime-revision` records the source used by current Python stages.
 - Configuration `configs/a100.json`, model `Qwen/Qwen2.5-1.5B-Instruct`, revision `989aa7980e4cf806f80c7fef2b1adb7bc71aa306`.
 - Runtime root: `/content/experiment-runs/E3-formal-independent-20261104-02`; code under `workspace/`, main output at `output.log`.
 - Local downloaded outputs: `results/live-attempt02/`. This is a partial live snapshot, not a completed report.
 - Original attempt `01` failed at dependency import (rc1, 246.05 seconds). Attempt `02`'s initial serial segment was intentionally interrupted after 134 completed rows, then resumed in the same directory with batch16. `serial-status.json` records that planned interruption as rc143; `batching-transition.json` records the reason, retained-row count and SHA256. Neither record should be mistaken for the current running state.
-- Base-direct uses batch16; subsequent tool evaluations and cold collection use batch32. GRPO combines four complete groups of eight trajectories per inference batch, retaining Q8 and G8. Dataset sizes, 500 cold examples, seeds 42/43/44, 300 GRPO steps and the objective are unchanged. See `docs/execution.md` for numerical and timing details.
+- Retained direct rows used batch16; deferred direct continuation, tool evaluations and cold collection use batch32. GRPO combines four complete groups of eight trajectories per inference batch, retaining Q8 and G8. Dataset sizes, 500 cold examples, seeds 42/43/44, 300 GRPO steps and the objective are unchanged. See `docs/execution.md` for numerical and timing details.
 - E2 adapter comparison still waits for its actual export. The independent cold-SFT/GRPO pipeline does not wait for E2.
 
-The Mac E3 agent owns this job. Do not submit another copy, allocate another session, or start server pi for this task. No SSH connection needs to remain open for the detached pipeline to continue. The current direct process was left running while later-stage source was updated.
+The Mac E3 agent owns this job. Do not submit another copy, allocate another session, or start server pi for this task. No SSH connection needs to remain open for the detached pipeline to continue. The direct segment was intentionally paused after preserving all 2,102 rows and saving them to Drive. `priority-transition.json` and `before-priority-*` retain that transition. The queue now runs base-tools core1000 → seed42 collect/SFT/GRPO/core comparisons → seeds43/44 likewise → all deferred full evaluations. Its core metadata explicitly describes 1,000 rows; it is not a full 6,000-row completion.
 
 Next progress commands from this repository on Mac:
 
@@ -34,6 +34,7 @@ Next progress commands from this repository on Mac:
 colab download -s exp-e3-formal /content/experiment-runs/E3-formal-independent-20261104-02/status.json results/live-attempt02/status.json
 colab download -s exp-e3-formal /content/experiment-runs/E3-formal-independent-20261104-02/output.log results/live-attempt02/output.log
 colab download -s exp-e3-formal /content/experiment-runs/E3-formal-independent-20261104-02/workspace/results/eval-base-direct.jsonl results/live-attempt02/eval-base-direct.jsonl
+colab download -s exp-e3-formal /content/experiment-runs/E3-formal-independent-20261104-02/workspace/results/core/eval-base-tools.jsonl results/live-attempt02/core/eval-base-tools.jsonl
 ```
 
 For actual remote operations, the CLI's Jupyter WebSocket can fail while the detached job keeps running. Use the existing session's official SSH transport when needed:
@@ -53,6 +54,8 @@ rclone copy /content/experiment-runs/E3-formal-independent-20261104-02/workspace
 ```
 
 Only copy completed checkpoint directories while training is active. A whole-results copy is a final/paused-run archive; checkpoints are copied after saving. If Drive is unavailable, retain runtime/local files and report the failed copy. Native Drive mounting is not used.
+
+Actual saved originals: `gdrive:exp/runs/E3/snapshots/direct-before-priority` (2,102 rows, rclone rc0). Prepared data: `gdrive:exp/datasets/e3` (rc0). Active source archive: `gdrive:exp/runs/E3/source/9a3c642.tgz` (rc0).
 
 ## Runtime setup and formal data
 
