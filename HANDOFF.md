@@ -1,6 +1,15 @@
 # E3 live handoff
 
-Observed 2026-11-04 23:34 JST. **Mac owns the job; server pi remains stopped.**
+## 2026-11-04 23:40 JST server observation
+
+The existing foreground run on `exp-e3-recovery-a100` is still reporting `running` (PID 1266, source `1e9b43d`); its actual output advanced seed 42 cold collection to **123/500 accepted, 828 attempts**, and recorded a Drive copy at 23:39:25 JST. SFT and GRPO have not yet started. `exp-iopub-e3-recovery.service` is active and subscribes to the existing job; do not replace the job or its output client. Shared account usage observed at 23:40: 157.48 CU remaining, 17.34 CU/hour, four active assignments; this is not E3-specific cost. Original downloaded status and log snapshots are `/srv/exp-runner/state/remote/E3-formal-independent-20261104-03/status-latest.json` and `output-latest.log`.
+
+```sh
+colab download -s exp-e3-recovery-a100 /content/experiment-runs/E3-formal-independent-20261104-03/status.json /srv/exp-runner/state/remote/E3-formal-independent-20261104-03/status-latest.json
+colab download -s exp-e3-recovery-a100 /content/experiment-runs/E3-formal-independent-20261104-03/output.log /srv/exp-runner/state/remote/E3-formal-independent-20261104-03/output-latest.log
+```
+
+The following is the historical 23:34 handoff, superseded by the observation above where it differs.
 
 - Session `exp-e3-recovery-a100`, endpoint `gpu-a100-s-ass1c0-2kpagha8e7ubp`, A100-SXM4-40GB.
 - Active run `E3-formal-independent-20261104-03`, foreground kernel PID **1266** (Mac Colab client PID80810). Runtime root `/content/experiment-runs/E3-formal-independent-20261104-03`; workspace is its `workspace/` directory.
@@ -30,8 +39,8 @@ On the existing AWS controller as `exp-runner`:
 
 ```sh
 export PATH=/srv/exp-runner/runtime/python/bin:/usr/local/bin:/usr/bin:/bin
-colab download -s exp-e3-formal /content/experiment-runs/E3-formal-independent-20261104-03/status.json /srv/exp-runner/state/remote/E3-formal-independent-20261104-03/status.json
-colab download -s exp-e3-formal /content/experiment-runs/E3-formal-independent-20261104-03/output.log /srv/exp-runner/state/remote/E3-formal-independent-20261104-03/output.log
+colab download -s exp-e3-recovery-a100 /content/experiment-runs/E3-formal-independent-20261104-03/status.json /srv/exp-runner/state/remote/E3-formal-independent-20261104-03/status.json
+colab download -s exp-e3-recovery-a100 /content/experiment-runs/E3-formal-independent-20261104-03/output.log /srv/exp-runner/state/remote/E3-formal-independent-20261104-03/output.log
 ```
 
 A notebook-kernel `IDLE` status does not describe the detached model process. WebSocket monitoring may disconnect without stopping training. Use actual status/results, and never allocate another GPU or resubmit on a monitoring error. Mac's working official SSH transport is:
