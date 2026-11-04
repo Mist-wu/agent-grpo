@@ -56,6 +56,8 @@ Active attempt `E3-formal-independent-20261104-03` uses A100 session `exp-e3-rec
 
 2026-11-05 04:50 JST: output still ends at step100 and no step100 dev result observed. `colab usage`: 72.20 CU remaining, 17.34 CU/hour, four assignments; shared-account readings only. Recorded first100 training-step times sum to 13,231.0475 seconds, excluding dev evaluation/checkpoint copying; not total runtime or E3 CU cost.
 
+2026-11-05 04:57 JST: step100 GSM8K dev result collected; HotpotQA dev pending. `colab usage`: 70.76 CU remaining, 17.34 CU/hour, four assignments; shared-account readings only, not E3-attributed cost. Existing run preserved.
+
 ## Historical observations
 
 | Run | Session | Requested / allocated GPU | Job start | Latest stage | Observed CU cost |
