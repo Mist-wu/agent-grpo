@@ -34,6 +34,7 @@ def main():
             p.add_argument("--dev")
         if name == "evaluate":
             p.add_argument("--condition", choices=["base-direct", "base-tools", "e2-lora", "cold-sft", "grpo"], required=True)
+            p.add_argument("--batch-size", type=int, default=1, help="Batch size for direct greedy evaluation")
     report = sub.add_parser("report")
     report.add_argument("results", nargs="+")
     report.add_argument("--out", default="results/formal-summary.json")
@@ -54,7 +55,7 @@ def main():
         training(args.config, args.data, args.out, args.seed, args.adapter, args.resume, args.dev)
     elif args.command == "evaluate":
         from .stages import evaluate
-        evaluate(args.config, args.data, args.out, args.condition, args.seed, args.adapter)
+        evaluate(args.config, args.data, args.out, args.condition, args.seed, args.adapter, args.batch_size)
     elif args.command == "report":
         summarize(args.results, args.out)
     elif args.command == "copy-checkpoint":

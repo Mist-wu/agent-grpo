@@ -8,7 +8,7 @@ import sys
 import time
 from .schema import Trajectory, append_jsonl, read_tasks
 from .training import load_config, seed_all, model_and_tokenizer, token_logprobs, metadata
-from .rollout import sample_trajectory
+from .rollout import sample_trajectory, batch_direct_trajectories
 from .tools import probe_python_sandbox
 
 
@@ -135,7 +135,7 @@ def sft(config_path, trajectories_path, out_dir, seed=42, epochs=1, resume=None)
     (out / "run.json").write_text(json.dumps(meta, indent=2) + "\n")
 
 
-def evaluate(config_path, data_path, out_path, condition, seed=42, adapter=None):
+def evaluate(config_path, data_path, out_path, condition, seed=42, adapter=None, batch_size=1):
     import torch
     conditions = {"base-direct", "base-tools", "e2-lora", "cold-sft", "grpo"}
     if condition not in conditions:
@@ -168,13 +168,27 @@ def evaluate(config_path, data_path, out_path, condition, seed=42, adapter=None)
         meta_path.write_text(json.dumps(meta, indent=2) + "\n")
     if set(done) - {task.id for task in tasks}:
         raise ValueError("result includes unexpected task IDs")
-    for task in tasks:
-        if task.id in done:
-            continue
+    execution = {"created_at": meta["created_at"], "git_commit": meta["git_commit"],
+                 "existing_rows": len(done), "requested_batch_size": batch_size,
+                 "effective_batch_size": batch_size if condition == "base-direct" else 1}
+    append_jsonl(str(out) + ".executions.jsonl", execution)
+    pending = [task for task in tasks if task.id not in done]
+    batch_size = batch_size if condition == "base-direct" else 1
+    for offset in range(0, len(pending), batch_size):
+        batch = pending[offset:offset + batch_size]
         started = time.monotonic()
-        trajectory = sample_trajectory(model, tokenizer, task, temperature=0, tools_enabled=condition != "base-direct",
-                     max_new_tokens=config["max_new_tokens"], max_sequence_length=config["max_sequence_length"],
-                     enable_python=config.get("python_tool", False))
-        append_jsonl(out, {**asdict(trajectory), "dataset": task.dataset, "split": task.split,
-                          "source": task.source, "seed": seed, "condition": condition,
-                          "seconds": time.monotonic() - started})
+        if condition == "base-direct" and batch_size > 1:
+            trajectories = batch_direct_trajectories(model, tokenizer, batch,
+                max_new_tokens=config["max_new_tokens"], max_sequence_length=config["max_sequence_length"])
+        else:
+            trajectories = [sample_trajectory(model, tokenizer, batch[0], temperature=0,
+                tools_enabled=condition != "base-direct", max_new_tokens=config["max_new_tokens"],
+                max_sequence_length=config["max_sequence_length"], enable_python=config.get("python_tool", False))]
+        elapsed = time.monotonic() - started
+        for task, trajectory in zip(batch, trajectories):
+            append_jsonl(out, {**asdict(trajectory), "dataset": task.dataset, "split": task.split,
+                "source": task.source, "seed": seed, "condition": condition,
+                "seconds": elapsed / len(batch), "timing_mode": "batch_amortized" if len(batch) > 1 else "single",
+                "batch_size": len(batch), "batch_seconds": elapsed, "execution_commit": meta["git_commit"]})
+        print(json.dumps({"condition": condition, "completed": len(done) + offset + len(batch),
+                          "total": len(tasks), "batch_size": len(batch), "batch_seconds": elapsed}), flush=True)

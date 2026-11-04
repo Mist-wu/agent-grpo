@@ -92,3 +92,45 @@ def sample_trajectory(model, tokenizer, task, *, temperature=1.0, max_new_tokens
             break
         append_segment(ids, mask, suffix, False)
     return Trajectory(task.id, ids, mask, final_text, turns, reward(task, final_text, calls, parsed_calls), truncated)
+
+
+def batch_direct_trajectories(model, tokenizer, tasks, *, max_new_tokens=512, max_sequence_length=4096):
+    """Greedy direct answers with left padding; retain the original per-task token budget."""
+    import torch
+    prompts = [initial_prompt(tokenizer, task, False) for task in tasks]
+    trajectories = [None] * len(tasks)
+    short = []
+    for index, prompt in enumerate(prompts):
+        if len(prompt) + max_new_tokens <= max_sequence_length:
+            short.append(index)
+        else:
+            trajectories[index] = sample_trajectory(model, tokenizer, tasks[index], temperature=0,
+                tools_enabled=False, max_new_tokens=max_new_tokens, max_sequence_length=max_sequence_length)
+    if not short:
+        return trajectories
+    model.eval()
+    width = max(len(prompts[index]) for index in short)
+    device = next(model.parameters()).device
+    inputs = torch.full((len(short), width), tokenizer.pad_token_id, dtype=torch.long, device=device)
+    attention = torch.zeros_like(inputs)
+    for row, index in enumerate(short):
+        prompt = prompts[index]
+        inputs[row, -len(prompt):] = torch.tensor(prompt, dtype=torch.long, device=device)
+        attention[row, -len(prompt):] = 1
+    with torch.no_grad():
+        outputs = model.generate(inputs, attention_mask=attention, max_new_tokens=max_new_tokens,
+            do_sample=False, pad_token_id=tokenizer.pad_token_id, eos_token_id=tokenizer.eos_token_id,
+            use_cache=True, repetition_penalty=1.0, no_repeat_ngram_size=0, num_beams=1,
+            temperature=None, top_p=None, top_k=None)
+    for row, index in enumerate(short):
+        generated = outputs[row, width:].tolist()
+        if tokenizer.eos_token_id in generated:
+            generated = generated[:generated.index(tokenizer.eos_token_id) + 1]
+        text = tokenizer.decode(generated, skip_special_tokens=True)
+        prompt = prompts[index]
+        truncated = len(generated) == max_new_tokens and generated[-1] != tokenizer.eos_token_id
+        trajectories[index] = Trajectory(tasks[index].id, prompt + generated,
+            [False] * len(prompt) + [True] * len(generated), text,
+            [{"assistant": text, "generated_tokens": len(generated), "tools": []}],
+            reward(tasks[index], text, 0, 0), truncated)
+    return trajectories
