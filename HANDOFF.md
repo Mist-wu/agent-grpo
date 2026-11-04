@@ -1,5 +1,27 @@
 # E3 live handoff
 
+## 2026-11-05 06:30 JST: independent E2 full-test comparison launched
+
+Preserved the original A100 foreground run/output subscriber; downloaded seed42 training records through **139/300** into `results/collected/seed42/grpo-42-train-steps1-139.jsonl`. Capacity became available (three assignments), and `colab new -s exp-e3-e2-eval --gpu L4` succeeded. Staged private runtime configuration with `python3 /srv/exp-runner/app/ops/stage_runtime.py exp-e3-e2-eval`.
+
+Added `scripts/run_e2_eval.sh`, committed as `92cbbe1`, and launched **one** real foreground common-runner command under a persistent `setsid -f` client (no detached remote worker/fake keepalive):
+
+```sh
+python3 -m exp_common.colab --repo /srv/exp-runner/repos/agent-grpo --session exp-e3-e2-eval --run-id E3-e2-comparison-20261105-01 --output-dir /srv/exp-runner/state/remote/E3-e2-comparison-20261105-01 --env-file /content/experiment-env.json --timeout 604800 --artifact-path results -- env EXP_CHECKPOINT_REMOTE=gdrive:exp/runs/E3 bash scripts/run_e2_eval.sh
+```
+
+Host actual client PID **91277**, its `colab exec` child **91283**; remote foreground wrapper PID **16151**. Original receipt directory `/srv/exp-runner/state/remote/E3-e2-comparison-20261105-01` has `request.json`, `status.json`, `client.pid`, `client.log`, and downloaded `output-latest.log`. Actual status is running; dependency download is observed, **no evaluation rows/results yet claimed**. Source revision `92cbbe1e22d89687e060410156fb019153b3d1e7`, clean. No second output subscriber is needed while this real client remains connected.
+
+The script restores unchanged data directly from Drive and the actual E2 main42 adapter, then evaluates the full **6,000 tasks** (GSM500/Hotpot500/Symbolic5000), rescores saved outputs, and creates this condition's summary. It uses the same pinned BF16 model/generation limits and `configs/a100.json` as other conditions but **actual L4 hardware**, recorded in metadata and `results/e2-comparison/gpu.txt`; batch16. Actual E2 adapter receipt is collected at `results/collected/seed42/e2-main-seed42.adapter-receipt.json`. E2 training-data agent-review limitations still apply. This is not final combined E3 completion.
+
+Next poll (do not resubmit):
+```sh
+python3 -m exp_common.colab --poll --session exp-e3-e2-eval --run-id E3-e2-comparison-20261105-01 --output-dir /srv/exp-runner/state/remote/E3-e2-comparison-20261105-01
+colab download -s exp-e3-e2-eval /content/experiment-runs/E3-e2-comparison-20261105-01/output.log /srv/exp-runner/state/remote/E3-e2-comparison-20261105-01/output-latest.log
+```
+
+Continue original A100 polling below for checkpoint150/dev; full trained evaluations and seeds43/44 remain unfinished. Shared account usage at 06:30: **43.45 CU**, **17.34 CU/hour**, four assignments (before new allocation: 15.40 CU/hour across three assignments), not E3-attributed cost. Agent review is accepted, with uncertainty disclosed; `human_validation_complete=false`, `human_validation_required=false`.
+
 ## 2026-11-05 06:21 JST: GRPO progress
 
 Existing run `E3-formal-independent-20261104-03` on `exp-e3-recovery-a100` reached seed42 GRPO **136/300 steps**. Downloaded actual records using the documented training-record command and copied them to `results/collected/seed42/grpo-42-train-steps1-136.jsonl`. Existing output subscriber remains active; no command was resubmitted. Checkpoint100 and both intermediate dev results are already collected; full-test evaluations and remaining seeds remain unfinished. E2 comparison awaits capacity following the 06:15 L4/A100 allocation refusals. Shared usage: 46.19 CU remaining, 17.34 CU/hour across four assignments, not E3-only cost. Continue existing status/output and training polling below; collect checkpoint150/dev when produced.
