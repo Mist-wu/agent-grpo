@@ -207,4 +207,5 @@ def evaluate(config_path, data_path, out_path, condition, seed=42, adapter=None,
                 "batch_size": len(batch), "batch_seconds": elapsed, "execution_commit": meta["git_commit"]})
         print(json.dumps({"condition": condition, "completed": len(done) + offset + len(batch),
                           "total": len(tasks), "batch_size": len(batch), "batch_seconds": elapsed}), flush=True)
-    copy_outputs([out, meta_path, Path(str(out) + ".executions.jsonl")], "results")
+    copy_outputs([out, meta_path, Path(str(out) + ".executions.jsonl")],
+                 "results/core" if out.parent.name == "core" else "results")
