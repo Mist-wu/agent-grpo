@@ -1,5 +1,9 @@
 # E3 live handoff
 
+## 2026-11-05 04:43 JST: second GRPO checkpoint saved
+
+Existing run `E3-formal-independent-20261104-03` on `exp-e3-recovery-a100` reached seed42 GRPO **100/300 steps**. `rclone lsf gdrive:exp/runs/E3/grpo-42/ --max-depth 2` shows **checkpoint-0100** with adapter weights, tokenizer, metadata and `training-state.pt`. Collected metadata using `rclone copyto gdrive:exp/runs/E3/grpo-42/checkpoint-0100/metadata.json /srv/exp-runner/state/remote/E3-formal-independent-20261104-03/grpo-42-checkpoint-0100-metadata.json`, then copied it and 100 actual training records to `results/collected/seed42/`, alongside a file-list receipt. Downloaded `workspace/results/grpo-42/dev.jsonl` still contains only step50 results: no step100 dev result observed yet. This is an intermediate checkpoint, not completed training or a full-test result. Existing output subscriber remains active; no command was resubmitted. E2 comparison awaits capacity. Shared usage: 73.65 CU remaining, 17.34 CU/hour across four assignments, not E3-only cost. Continue existing status/output polling below and collect step100 dev results once produced; do not submit duplicate evaluation.
+
 ## 2026-11-05 04:37 JST: GRPO progress
 
 Existing run `E3-formal-independent-20261104-03` on `exp-e3-recovery-a100` reached seed42 GRPO **99/300 steps**. Downloaded actual records using the documented training-record command and copied them to `results/collected/seed42/grpo-42-train-steps1-99.jsonl`. Existing output subscriber remains active; no command was resubmitted. Step50 checkpoint and intermediate dev results are already collected; checkpoint100 is not yet claimed. Full-test evaluations and remaining seeds remain unfinished. E2 comparison awaits capacity after the 03:35 refusals. Shared usage: 76.53 CU remaining, 17.34 CU/hour across four assignments, not E3-only cost. Continue polling existing status/output and training records below; watch for checkpoint100 and its dev results.

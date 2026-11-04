@@ -1,0 +1,12 @@
+{
+  "observed_at_utc": "2026-11-04T19:43:21Z",
+  "run_id": "E3-formal-independent-20261104-03",
+  "session": "exp-e3-recovery-a100",
+  "checkpoint_step": 100,
+  "remote": "gdrive:exp/runs/E3/grpo-42/checkpoint-0100",
+  "observation_command": "rclone lsf gdrive:exp/runs/E3/grpo-42/ --max-depth 2",
+  "observed_files": ["README.md", "adapter_config.json", "adapter_model.safetensors", "added_tokens.json", "merges.txt", "metadata.json", "special_tokens_map.json", "tokenizer.json", "tokenizer_config.json", "training-state.pt", "vocab.json"],
+  "collected_metadata": "results/collected/seed42/grpo-42-checkpoint-0100-metadata.json",
+  "dev_evaluation": "No step100 dev result observed yet; downloaded dev.jsonl contains only the two already-collected step50 records.",
+  "final_training_complete": false
+}
