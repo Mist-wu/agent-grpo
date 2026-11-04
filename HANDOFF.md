@@ -2,7 +2,7 @@
 
 ## State and scope
 
-The independent formal E3 campaign is RUNNING on its assigned A100. At 2026-11-04 21:32 JST, the recovered attempt had written 20/6,000 actual base-direct evaluation rows using Qwen2.5-1.5B-Instruct; A100 GPU memory usage was 3,690 MiB and utilization 28%. Cold-SFT and GRPO have not yet been reached, and no complete formal training results exist. Dedicated preliminary-run scripts, results and debug configurations were removed at the user's request. Proceed directly to the formal pipeline.
+The Mac agents now control the existing Colab runtime directly; server pi is stopped. E3 remains RUNNING in attempt `E3-formal-independent-20261104-02`. The latest downloaded formal result contained 630/6,000 base-direct rows (500 GSM8K, 130 HotpotQA). Of these, 496 batched rows averaged 0.975 seconds/question; long-run throughput varies with question length. Cold-SFT and GRPO have not yet been reached, and complete formal results do not exist. Dedicated preliminary-run scripts, results and debug configurations were removed at the user's request.
 
 Existing implementation: strict Qwen tool protocol shared with E2; calculator, BM25 search and optional isolated Python; source-normalized dataset preparation; correct-trajectory collection; action-only SFT; clipped GRPO with frozen old/reference log probabilities; resumable checkpoints; final-test evaluation and three-seed summaries.
 
@@ -14,30 +14,37 @@ The text-only formal launcher now uninstalls incompatible optional `torchvision`
 
 E2 reports that its pending main adapter is trained from the Glaive fallback (train 18,547 / dev 2,003 / test 2,000), not xLAM/60k. Final exported location will be recorded in E2 `results/main-seed42.adapter-receipt.json`, accompanied by `main-seed42.train.json`. Do not label the comparison as xLAM trained or completed before those real artifacts exist.
 
-## Live campaign handoff
+## Active Mac control
 
-- Session: `exp-e3-formal`; endpoint `gpu-a100-s-ass1c0-fz5a9fduhlbu`; observed GPU `NVIDIA A100-SXM4-40GB`.
-- Active run ID: `E3-formal-independent-20261104-02`; submitted at 2026-11-04 21:28:33 JST.
-- Runtime source: `6eb668b51a14e9f3e2ab4c1dcf8d993b1b9a615c`, clean. Configuration `configs/a100.json`, model `Qwen/Qwen2.5-1.5B-Instruct`, revision `989aa7980e4cf806f80c7fef2b1adb7bc71aa306`.
-- Observed state: `running`, wrapper PID `5521`, return code unset. The optional vision/audio packages were successfully removed, model loading passed the previous import failure, and base-direct evaluation produced real rows.
-- Server receipt/status/log directory: `/srv/exp-runner/state/remote/E3-formal-independent-20261104-02`.
-- Runtime directory: `/content/experiment-runs/E3-formal-independent-20261104-02`; code under `workspace/`, log at `output.log`.
-- Submitted command: `env EXP_CHECKPOINT_REMOTE=gdrive:exp/runs/E3 E3_DATA_DIR=/content/experiment-runs/E3-formal-independent-20261104-01/workspace/data bash scripts/run_formal.sh configs/a100.json`.
-- Stages: base-direct, base-tools, then seeds 42/43/44 each with cold-start collection/SFT, SFT evaluation, 300-step GRPO, and final GRPO evaluation. E2 adapter comparison is not part of this independent launch and remains pending the actual E2 export.
-- Failed attempt `01` remains recorded with rc1 and duration 246.05 seconds; preserve its directory because it holds the prepared data used by attempt `02`.
+- Session: `exp-e3-formal`; endpoint `gpu-a100-s-ass1c0-fz5a9fduhlbu`; GPU `NVIDIA A100-SXM4-40GB`.
+- Active run ID remains `E3-formal-independent-20261104-02`, wrapper PID `10606` after the planned batching recovery.
+- Base-direct running source: `0f237cd117e6ffabe44f394b80534769edf01384`, clean. Later stages are deployed from `554b909bf1c05191027406a4412e3f417c448b08`, recorded by `workspace/.runtime-revision` and `source-updates.jsonl`.
+- Configuration `configs/a100.json`, model `Qwen/Qwen2.5-1.5B-Instruct`, revision `989aa7980e4cf806f80c7fef2b1adb7bc71aa306`.
+- Runtime root: `/content/experiment-runs/E3-formal-independent-20261104-02`; code under `workspace/`, main output at `output.log`.
+- Local downloaded outputs: `results/live-attempt02/`. This is a partial live snapshot, not a completed report.
+- Original attempt `01` failed at dependency import (rc1, 246.05 seconds). Attempt `02`'s initial serial segment was intentionally interrupted after 134 completed rows, then resumed in the same directory with batch16. `serial-status.json` records that planned interruption as rc143; `batching-transition.json` records the reason, retained-row count and SHA256. Neither record should be mistaken for the current running state.
+- Base-direct uses batch16; subsequent tool evaluations use batch8. Cold collection batches up to eight questions, GRPO samples each existing group of eight jointly. Dataset sizes, 500 cold examples, seeds 42/43/44, 300 GRPO steps and the objective are unchanged. See `docs/execution.md` for numerical and timing details.
+- E2 adapter comparison still waits for its actual export. The independent cold-SFT/GRPO pipeline does not wait for E2.
 
-Root owns ongoing polling and allocation. Do not submit a duplicate or allocate another session. Local/server code writing is frozen after this handoff; the documentation commit does not change the launched source snapshot.
+The Mac E3 agent owns this job. Do not submit another copy, allocate another session, or start server pi for this task. No SSH connection needs to remain open for the detached pipeline to continue. The current direct process was left running while later-stage source was updated.
 
-Next command, on the AWS controller as `exp-runner`:
+Next progress commands from this repository on Mac:
 
 ```sh
-export PATH=/srv/exp-runner/runtime/python/bin:/usr/local/bin:/usr/bin:/bin
-export PYTHONPATH=/srv/exp-runner/app:/srv/exp-runner/app/common
-python3 -m exp_common.colab --poll --session exp-e3-formal --run-id E3-formal-independent-20261104-02 --output-dir /srv/exp-runner/state/remote/E3-formal-independent-20261104-02
-colab download -s exp-e3-formal /content/experiment-runs/E3-formal-independent-20261104-02/output.log /srv/exp-runner/state/remote/E3-formal-independent-20261104-02/output.log
+colab download -s exp-e3-formal /content/experiment-runs/E3-formal-independent-20261104-02/status.json results/live-attempt02/status.json
+colab download -s exp-e3-formal /content/experiment-runs/E3-formal-independent-20261104-02/output.log results/live-attempt02/output.log
+colab download -s exp-e3-formal /content/experiment-runs/E3-formal-independent-20261104-02/workspace/results/eval-base-direct.jsonl results/live-attempt02/eval-base-direct.jsonl
 ```
 
-Archive outputs before releasing the runtime, including partial outputs after failure. Attempt `02` has a `data` symlink to attempt `01`; archiving that symlink does not copy the actual dataset. Run the following directly on the assigned Colab runtime with its staged private rclone environment, keeping large data off the AWS controller:
+For actual remote operations, the CLI's Jupyter WebSocket can fail while the detached job keeps running. Use the existing session's official SSH transport when needed:
+
+```sh
+ssh -o ConnectTimeout=60 -o "ProxyCommand=/Users/wu/.local/bin/colab ssh --proxy-mode -s exp-e3-formal -i /Users/wu/.ssh/id_ed25519" -i /Users/wu/.ssh/id_ed25519 root@colab-runtime
+```
+
+Use `colab upload`/`download` for file transfers; the SCP subsystem was unavailable. Do not restart the kernel or resubmit the experiment merely because a monitoring connection fails. `colab status` may show IDLE for the notebook kernel while detached model processes continue; inspect the actual job status/results.
+
+Archive outputs before releasing the runtime, including partial outputs after a real failure. Attempt `02` has a `data` symlink to attempt `01`; archiving that symlink does not copy the actual dataset. Run these on the existing runtime with its staged private rclone environment, keeping large data off the AWS controller:
 
 ```sh
 export RCLONE_HEADER='X-Goog-User-Project:pi-workspace-wu-4b7f3a'
@@ -45,11 +52,11 @@ rclone copy /content/experiment-runs/E3-formal-independent-20261104-01/workspace
 rclone copy /content/experiment-runs/E3-formal-independent-20261104-02/workspace/results gdrive:exp/runs/E3/results
 ```
 
-Only copy completed checkpoint directories while training is active. A whole-results copy is a final/paused-run archive; checkpoint copies already occur after each checkpoint save. If Drive is unavailable, retain runtime files and report the failed copy; do not claim they are durable. The E2 and E3 `tool_format.py` files were compared and are identical at E2 commit `00932e4` and E3 parent commit `eeea3ce`.
+Only copy completed checkpoint directories while training is active. A whole-results copy is a final/paused-run archive; checkpoints are copied after saving. If Drive is unavailable, retain runtime/local files and report the failed copy. Native Drive mounting is not used.
 
 ## Runtime setup and formal data
 
-Run only on an existing runtime assigned by root, after its current job is finished. Do not allocate a new Colab runtime or run large-data preparation on the 2 GB AWS orchestrator. The shared transport starts commands in `/content/experiment-runs/<run_id>/workspace`; the example below uses run ID `e3-formal`. Controller supplies private rclone configuration separately:
+The active runtime above is already assigned. The following commands describe setup for an explicitly scheduled recovery, not an instruction to launch a second copy. Do not allocate a new Colab runtime or run large-data preparation on the 2 GB AWS orchestrator. The shared transport starts commands in `/content/experiment-runs/<run_id>/workspace`; the example below uses run ID `e3-formal`. Controller supplies private rclone configuration separately:
 
 ```sh
 cd /content/experiment-runs/e3-formal/workspace
