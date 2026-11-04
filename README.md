@@ -4,11 +4,12 @@ Hand-written Qwen2.5 LoRA experiment: compare base models, E2 toolcall LoRA, a s
 
 ## Formal execution
 
-Use an already allocated GPU runtime. This repository does not allocate GPUs, start paid APIs or publish repositories.
+Use an already allocated GPU runtime assigned by root; run commands from its unpacked repository workspace, normally `/content/experiment-runs/<run_id>/workspace`. This repository does not allocate GPUs, start paid APIs or publish repositories.
 
 ```sh
 python -m pip install -e '.[train]'
 python scripts/run.py prepare --out data
+export RCLONE_HEADER='X-Goog-User-Project:pi-workspace-wu-4b7f3a'
 export EXP_CHECKPOINT_REMOTE='gdrive:exp/runs/E3'
 ```
 

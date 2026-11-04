@@ -2,23 +2,24 @@
 
 ## State and scope
 
-Implementation is ready for formal execution. No E3 GPU or paid API run has started, and formal metrics are absent. Dedicated preliminary-run scripts, results and debug configurations were removed at the user's request. Proceed directly to the formal pipeline.
+Code and formal commands are ready for the scheduler. E3 has not completed any real formal training; no E3 GPU or paid API run has started, and formal metrics are absent. Dedicated preliminary-run scripts, results and debug configurations were removed at the user's request. Proceed directly to the formal pipeline.
 
 Existing implementation: strict Qwen tool protocol shared with E2; calculator, BM25 search and optional isolated Python; source-normalized dataset preparation; correct-trajectory collection; action-only SFT; clipped GRPO with frozen old/reference log probabilities; resumable checkpoints; final-test evaluation and three-seed summaries.
 
 ## Runtime setup and formal data
 
-On the allocated runtime, with controller-provided rclone credentials/quota header:
+Run only on an existing runtime assigned by root, after its current job is finished. Do not allocate a new Colab runtime or run large-data preparation on the 2 GB AWS orchestrator. The shared transport starts commands in `/content/experiment-runs/<run_id>/workspace`; the example below uses run ID `e3-formal`. Controller supplies private rclone configuration separately:
 
 ```sh
-cd /content/agent-grpo
+cd /content/experiment-runs/e3-formal/workspace
+export RCLONE_HEADER='X-Goog-User-Project:pi-workspace-wu-4b7f3a'
 python -m pip install -e '.[train]'
 python scripts/run.py prepare --out data
 rclone copy data gdrive:exp/datasets/e3
 export EXP_CHECKPOINT_REMOTE='gdrive:exp/runs/E3'
 ```
 
-Use local `/content/agent-grpo/data` for training, not a Drive-mounted dataset. `prepare` writes 3,000 train + 100 dev rows each for GSM8K and HotpotQA, 500 final rows each, and full GSM-Symbolic main instances. It records actual dataset revision hashes, license and split provenance. Native Drive mounting is not part of unattended execution.
+Use the workspace's local `data/` directory on the Colab runtime for training, not a Drive-mounted dataset. `prepare` writes 3,000 train + 100 dev rows each for GSM8K and HotpotQA, 500 final rows each, and full GSM-Symbolic main instances. It records actual dataset revision hashes, license and split provenance. Native Drive mounting is not part of unattended execution.
 
 ## Formal commands
 
@@ -30,7 +31,7 @@ python scripts/run.py evaluate --config configs/a100.json --data data/test.jsonl
 bash scripts/run_seeds.sh configs/a100.json
 ```
 
-The seed script independently samples correct cold-start trajectories, trains a new SFT adapter, evaluates it, performs 300 GRPO steps and evaluates final adapters for seeds 42/43/44. These stages need not wait for E2. E2 is a separate baseline, never the cold-start initialization:
+The seed script independently samples correct cold-start trajectories, trains a new SFT adapter, evaluates it, performs 300 GRPO steps and evaluates final adapters for seeds 42/43/44. These stages need not wait for E2. E2 is a separate baseline, never the cold-start initialization. Its local working path is not guaranteed to exist on an E3 runtime: wait for E2/root to provide the exported adapter location and copy those adapter files into the path below before this command. The completed E3 comparison waits for that real E2 artifact; do not create placeholder weights:
 
 ```sh
 # E2 exports <E2_ARTIFACTS>/main-seed42/adapter; working default /content/e2-artifacts/main-seed42/adapter.
