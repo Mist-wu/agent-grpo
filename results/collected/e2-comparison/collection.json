@@ -1,0 +1,14 @@
+{
+  "run_id": "E3-e2-comparison-20261105-01",
+  "state": "downloaded",
+  "local_archive": "/srv/exp-runner/state/remote/E3-e2-comparison-20261105-01/artifacts.tgz",
+  "requested_paths": [
+    "results/eval-e2-lora-42.jsonl",
+    "results/eval-e2-lora-42.jsonl.metadata.json",
+    "results/eval-e2-lora-42.jsonl.executions.jsonl",
+    "results/scored-v2/eval-e2-lora-42.jsonl",
+    "results/scored-v2/eval-e2-lora-42.jsonl.metadata.json",
+    "results/e2-comparison"
+  ],
+  "downloaded_at": "2026-11-04T21:54:16.785790+00:00"
+}

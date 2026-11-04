@@ -1,0 +1,14 @@
+{
+  "run_id": "E3-e2-comparison-20261105-01",
+  "state": "succeeded",
+  "returncode": 0,
+  "started_at_unix": 1793827834.3004746,
+  "git": {
+    "commit": "92cbbe1e22d89687e060410156fb019153b3d1e7",
+    "dirty": false
+  },
+  "pid": 16151,
+  "ended_at_unix": 1793829072.3350008,
+  "duration_seconds": 1238.0345270633698,
+  "remote_directory": "/content/experiment-runs/E3-e2-comparison-20261105-01"
+}

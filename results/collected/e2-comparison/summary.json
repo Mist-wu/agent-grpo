@@ -1,0 +1,134 @@
+{
+  "formal": true,
+  "provenance": [
+    {
+      "result_file": "results/scored-v2/eval-e2-lora-42.jsonl",
+      "created_at": "2026-11-04T21:33:57.380503+00:00",
+      "git_commit": "92cbbe1e22d89687e060410156fb019153b3d1e7",
+      "score_version": "v2-qwen-gsm-last-number-hotpot-f1",
+      "git_dirty": false,
+      "config": {
+        "model": "Qwen/Qwen2.5-1.5B-Instruct",
+        "model_revision": "989aa7980e4cf806f80c7fef2b1adb7bc71aa306",
+        "device": "cuda",
+        "dtype": "bfloat16",
+        "device_profile": "a100",
+        "temperature": 1.0,
+        "max_new_tokens": 512,
+        "max_sequence_length": 4096,
+        "group_size": 8,
+        "questions_per_step": 8,
+        "update_epochs": 2,
+        "steps": 300,
+        "learning_rate": 1e-05,
+        "lora_rank": 16,
+        "kl_beta": 0.04,
+        "clip_epsilon": 0.2,
+        "checkpoint_every": 50,
+        "python_tool": false,
+        "sft_gradient_accumulation": 8,
+        "sft_learning_rate": 0.0002,
+        "seed": 42
+      },
+      "data_sha256": "e479e0c5eb649a1a987908fe876f0f1688a28f1271e7e34c06cde3ce01b1833d",
+      "torch": "2.6.0+cu124",
+      "cuda": "12.4",
+      "gpu": "NVIDIA L4",
+      "model_revision_resolved": "989aa7980e4cf806f80c7fef2b1adb7bc71aa306",
+      "condition": "e2-lora",
+      "seed": 42,
+      "adapter": "/content/e2-artifacts/main-seed42/adapter",
+      "split": "test",
+      "tasks": 6000,
+      "rescoring": {
+        "created_at": "2026-11-04T21:50:58.255697+00:00",
+        "source_file": "results/eval-e2-lora-42.jsonl",
+        "source_sha256": "d6bb07e61d0c957e3499034d774efe1d1ce380be72e63d73e18428682aa606f8",
+        "rows": 6000,
+        "complete": true,
+        "regenerated": false
+      }
+    }
+  ],
+  "evaluations": [
+    {
+      "condition": "e2-lora",
+      "seed": 42,
+      "dataset": "gsm-symbolic",
+      "n": 5000,
+      "mean": 0.0,
+      "ci95": [
+        0.0,
+        0.0
+      ],
+      "ci_unit": "template",
+      "score_version": "v2-qwen-gsm-last-number-hotpot-f1",
+      "strict_v1_mean": 0.0,
+      "format_compliance": 0.0,
+      "tool_calls_mean": 0.0,
+      "truncated_fraction": 0.0
+    },
+    {
+      "condition": "e2-lora",
+      "seed": 42,
+      "dataset": "gsm8k",
+      "n": 500,
+      "mean": 0.0,
+      "ci95": [
+        0.0,
+        0.0
+      ],
+      "ci_unit": "question",
+      "score_version": "v2-qwen-gsm-last-number-hotpot-f1",
+      "strict_v1_mean": 0.0,
+      "format_compliance": 0.0,
+      "tool_calls_mean": 0.0,
+      "truncated_fraction": 0.0
+    },
+    {
+      "condition": "e2-lora",
+      "seed": 42,
+      "dataset": "hotpotqa",
+      "n": 500,
+      "mean": 0.0008895104895104895,
+      "ci95": [
+        0.0,
+        0.0020307692307692305
+      ],
+      "ci_unit": "question",
+      "score_version": "v2-qwen-gsm-last-number-hotpot-f1",
+      "strict_v1_mean": 0.0008895104895104895,
+      "format_compliance": 0.0,
+      "tool_calls_mean": 0.0,
+      "truncated_fraction": 0.0
+    }
+  ],
+  "seed_summary": [
+    {
+      "condition": "e2-lora",
+      "dataset": "gsm-symbolic",
+      "seeds": 1,
+      "mean": 0.0,
+      "std": null
+    },
+    {
+      "condition": "e2-lora",
+      "dataset": "gsm8k",
+      "seeds": 1,
+      "mean": 0.0,
+      "std": null
+    },
+    {
+      "condition": "e2-lora",
+      "dataset": "hotpotqa",
+      "seeds": 1,
+      "mean": 0.0008895104895104895,
+      "std": null
+    }
+  ],
+  "limitations": [
+    "Public benchmarks may be contaminated; GSM-Symbolic remains derived from GSM8K.",
+    "Python tool is disabled unless Linux isolation probe passed.",
+    "No claim of speed, convergence, or positive improvement without results."
+  ]
+}
