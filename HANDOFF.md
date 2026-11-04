@@ -1,5 +1,11 @@
 # E3 live handoff
 
+## 2026-11-04 23:54 JST server observation
+
+Run `E3-formal-independent-20261104-03` remains in seed 42 cold collection: output reports **233/500 accepted from 1,664 attempts**, with the latest completed Drive copy at 23:53:44 JST. The existing output subscriber remains active. SFT/GRPO have not started. E2's final adapter still awaits the training run. Shared account `colab usage` reported 153.13 CU remaining and 17.34 CU/hour across four assignments; not an E3-only cost. Do not resubmit the active job. Poll using the commands below.
+
+Collected the previously completed core baseline artifact package from Drive to `results/collected/core-baseline-artifacts.tgz` (also retained at `/srv/exp-runner/state/remote/E3-formal-independent-20261104-03/core-baseline-artifacts.tgz`), using `rclone copy gdrive:exp/runs/E3/analysis/core-baseline-artifacts.tgz /srv/exp-runner/state/remote/E3-formal-independent-20261104-03/`. It contains the real core direct/tools JSONL and metadata, their scored summaries, the derived direct rows and diagnostics; these are not full 6,000-row evaluations.
+
 ## 2026-11-04 23:47 JST server observation
 
 Run `E3-formal-independent-20261104-03` on `exp-e3-recovery-a100` remains running (PID 1266); the actual seed 42 cold collection advanced to **184/500 accepted from 1,301 attempts** and reported a Drive copy at 23:47:32 JST. SFT and GRPO have not started. The existing `exp-iopub-e3-recovery.service` is active. At 23:47 shared account usage was 156.04 CU remaining, 17.34 CU/hour, four assignments, not E3-specific cost. E2's latest handoff reports seed42 step440/1288 at 23:41; its final adapter is not yet available. No job was resubmitted. The next download commands and receipt paths are immediately below.
