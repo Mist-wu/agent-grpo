@@ -53,6 +53,7 @@ def collect(config_path, data_path, out_path, seed=42, target=500, attempts_per_
     meta_path.parent.mkdir(parents=True, exist_ok=True)
     meta_path.write_text(json.dumps(meta, indent=2) + "\n")
     accepted, attempted = len(accepted_ids), len(attempts)
+    last_copy = time.monotonic()
     pending = [task for task in tasks if task.id not in accepted_ids and counts.get(task.id, 0) < attempts_per_question]
     cursor = 0
     while accepted < target and cursor < len(pending):
@@ -78,6 +79,16 @@ def collect(config_path, data_path, out_path, seed=42, target=500, attempts_per_
                                            "execution_commit": meta["git_commit"]})
             print(json.dumps({"stage": "cold-collection", "seed": seed, "accepted": accepted,
                               "target": target, "attempted": attempted}), flush=True)
+            # Persist only after all rows from this generation batch are closed.
+            # A reclaimed Colab runtime must not lose the whole collection stage.
+            if time.monotonic() - last_copy >= 60:
+                meta.update(accepted=accepted, attempted=attempted, reached_target=accepted >= target)
+                meta_path.write_text(json.dumps(meta, indent=2) + "\n")
+                copy_outputs([out, attempts_path, executions_path, meta_path], "data")
+                last_copy = time.monotonic()
+                print(json.dumps({"stage": "cold-collection-copy", "seed": seed,
+                                  "accepted": accepted, "attempted": attempted,
+                                  "time_unix": time.time()}), flush=True)
     meta.update(accepted=accepted, attempted=attempted, reached_target=accepted >= target)
     meta_path.write_text(json.dumps(meta, indent=2) + "\n")
     if accepted < target:
