@@ -1,127 +1,65 @@
-# E3 formal handoff
+# E3 live handoff
 
-## State and scope
+Observed 2026-11-04 23:20 JST. **Mac owns the job; server pi remains stopped.**
 
-The Mac agents control the existing Colab runtime directly; server pi is stopped. E3 is RUNNING in attempt `E3-formal-independent-20261104-02`. Core base-tools completed all 1,000 questions. Seed42 cold collection is now active at batch128; the latest detailed observation recorded 123/500 accepted trajectories and 828 attempts. SFT and GRPO have not yet started. The direct segment remains preserved at 2,102/6,000 rows, including complete GSM8K500 and HotpotQA500. Full training and deferred evaluations remain unfinished.
+- Session `exp-e3-formal`, endpoint `gpu-a100-s-ass1c0-fz5a9fduhlbu`, A100-SXM4-40GB.
+- Active run `E3-formal-independent-20261104-02`, wrapper PID **26936**. Runtime root `/content/experiment-runs/E3-formal-independent-20261104-02`; workspace is its `workspace/` directory.
+- Current stage: seed42 cold collection, **350/500 correct trajectories, 2,462 attempts**, batch128. SFT/GRPO have not started; no training checkpoint is yet claimed.
+- Current cold process source `beb13aa96b4431deb0e40c19e4b42cb719b02c80`. Later stages use `63a0c1d8a4a20d672daced3598249ef8cea20c74`, recorded in `workspace/.runtime-revision` (GRPO generation batch64). All steps, seeds and data are unchanged.
+- Running command: `env EXP_CHECKPOINT_REMOTE=gdrive:exp/runs/E3 E3_TOOL_BATCH_SIZE=32 E3_DIRECT_BATCH_SIZE=32 E3_COLLECTION_BATCH_SIZE=128 bash scripts/run_priority.sh configs/a100.json training`.
+- Model `Qwen/Qwen2.5-1.5B-Instruct`, revision `989aa7980e4cf806f80c7fef2b1adb7bc71aa306`; BF16, Q8 × G8, 300 GRPO steps, seeds42/43/44. Math scoring v2 is documented in `docs/scoring.md`; original v1 scores remain saved.
 
-Existing implementation: strict Qwen tool protocol shared with E2; calculator, BM25 search and optional isolated Python; source-normalized dataset preparation; correct-trajectory collection; action-only SFT; clipped GRPO with frozen old/reference log probabilities; resumable checkpoints; final-test evaluation and three-seed summaries.
+## Next actual command
 
-## Actual dependency failure and same-session recovery
-
-Attempt `E3-formal-independent-20261104-01` failed with return code 1 after 246.05 seconds, after data preparation. The real error was `operator torchvision::nms does not exist`, imported through PEFT/Transformers Bloom; preinstalled torchvision binaries did not match pinned torch 2.6.0. The failed attempt's status/output and prepared data remain in place.
-
-The text-only formal launcher now uninstalls incompatible optional `torchvision` and `torchaudio` after installing its pinned stack. It accepts `E3_DATA_DIR` to reuse the existing prepared data. Recovery uses the **same** `exp-e3-formal` A100 with a new attempt ID `E3-formal-independent-20261104-02`; its data points to `/content/experiment-runs/E3-formal-independent-20261104-01/workspace/data`, preserving the first attempt's files. No preliminary run or new GPU allocation is involved.
-
-E2 reports that its pending main adapter is trained from the Glaive fallback (train 18,547 / dev 2,003 / test 2,000), not xLAM/60k. Final exported location will be recorded in E2 `results/main-seed42.adapter-receipt.json`, accompanied by `main-seed42.train.json`. Do not label the comparison as xLAM trained or completed before those real artifacts exist.
-
-## Active Mac control
-
-- Session: `exp-e3-formal`; endpoint `gpu-a100-s-ass1c0-fz5a9fduhlbu`; GPU `NVIDIA A100-SXM4-40GB`.
-- Active run ID remains `E3-formal-independent-20261104-02`, wrapper PID `26936` after the cold-collection throughput adjustment.
-- Active cold process source: `beb13aa96b4431deb0e40c19e4b42cb719b02c80`, executing `bash scripts/run_priority.sh configs/a100.json training` with collection batch128. Later stages use deployed `63a0c1d8a4a20d672daced3598249ef8cea20c74` (GRPO inference batch64), recorded in `.runtime-revision`. The cold process was not restarted for that later-stage update.
-- The original training file was valid but contained two U+2028 characters; its JSONL reader was corrected to use LF delimiters in `cab986c`. The real rc1 failure is archived under `jsonl-failure-*`; no sample or source byte changed.
-- The batch32 cold segment retained 91 accepted trajectories and 620 attempts before its planned interruption; both were copied to Drive and resumed, with execution sidecars preserving the source/batch history.
-- Configuration `configs/a100.json`, model `Qwen/Qwen2.5-1.5B-Instruct`, revision `989aa7980e4cf806f80c7fef2b1adb7bc71aa306`.
-- Runtime root: `/content/experiment-runs/E3-formal-independent-20261104-02`; code under `workspace/`, main output at `output.log`.
-- Local downloaded outputs: `results/live-attempt02/`. This is a partial live snapshot, not a completed report.
-- Original attempt `01` failed at dependency import (rc1, 246.05 seconds). Attempt `02`'s initial serial segment was intentionally interrupted after 134 completed rows, then resumed in the same directory with batch16. `serial-status.json` records that planned interruption as rc143; `batching-transition.json` records the reason, retained-row count and SHA256. Neither record should be mistaken for the current running state.
-- Retained direct rows used batch16; deferred direct continuation and tool evaluations use batch32. Cold collection uses batch128. GRPO generates all eight original groups together in batch64, retaining Q8 and G8. Dataset sizes, 500 cold examples, seeds 42/43/44, 300 GRPO steps and the objective are unchanged. See `docs/execution.md` for numerical and timing details.
-- E2 adapter comparison still waits for its actual export. The independent cold-SFT/GRPO pipeline does not wait for E2.
-
-The Mac E3 agent owns this job. Do not submit another copy, allocate another session, or start server pi for this task. No SSH connection needs to remain open for the detached pipeline to continue. The direct segment was intentionally paused after preserving all 2,102 rows and saving them to Drive. `priority-transition.json` and `before-priority-*` retain that transition. The completed base-tools core1000 is skipped on recovery. The remaining queue is seed42 collect/SFT/GRPO/core comparisons → seeds43/44 likewise → all deferred full evaluations. Its core metadata explicitly describes 1,000 rows; it is not a full 6,000-row completion.
-
-Next progress commands from this repository on Mac:
+The running script automatically executes this after collection reaches500 and copies its closed outputs. **Do not launch a duplicate while PID26936 is active.**
 
 ```sh
-colab download -s exp-e3-formal /content/experiment-runs/E3-formal-independent-20261104-02/status.json results/live-attempt02/status.json
-colab download -s exp-e3-formal /content/experiment-runs/E3-formal-independent-20261104-02/output.log results/live-attempt02/output.log
-colab download -s exp-e3-formal /content/experiment-runs/E3-formal-independent-20261104-02/workspace/results/eval-base-direct.jsonl results/live-attempt02/eval-base-direct.jsonl
-colab download -s exp-e3-formal /content/experiment-runs/E3-formal-independent-20261104-02/workspace/results/core/eval-base-tools.jsonl results/live-attempt02/core/eval-base-tools.jsonl
+cd /content/experiment-runs/E3-formal-independent-20261104-02/workspace
+python scripts/run.py sft --config configs/a100.json --data data/cold-42.jsonl --out results/cold-42 --seed 42
+# Automatically follows SFT:
+python scripts/run.py train --config configs/a100.json --data data/train.jsonl --dev data/dev.jsonl --out results/grpo-42 --seed 42 --adapter results/cold-42/adapter
 ```
 
-For actual remote operations, the CLI's Jupyter WebSocket can fail while the detached job keeps running. Use the existing session's official SSH transport when needed:
+Queue: finish seed42 collection/SFT/GRPO → seed42 core comparisons → seeds43/44 likewise → all deferred full evaluations. Every full condition still includes GSM500 + Hotpot500 + GSM-Symbolic5000. Core results have explicit1,000-row metadata; they are not reported as6,000 completed. The E2 comparison waits for its real `main-seed42.adapter-receipt.json` and `main-seed42.train.json`; its data is Glaive18,547/2,003/2,000, not xLAM60k.
+
+## Read status without creating work
+
+On Mac, download `status.json` and `output.log` from the run root with `colab download -s exp-e3-formal`. Local snapshots are in `results/live-attempt02/`.
+
+On the existing AWS controller as `exp-runner`:
+
+```sh
+export PATH=/srv/exp-runner/runtime/python/bin:/usr/local/bin:/usr/bin:/bin
+colab download -s exp-e3-formal /content/experiment-runs/E3-formal-independent-20261104-02/status.json /srv/exp-runner/state/remote/E3-formal-independent-20261104-02/status.json
+colab download -s exp-e3-formal /content/experiment-runs/E3-formal-independent-20261104-02/output.log /srv/exp-runner/state/remote/E3-formal-independent-20261104-02/output.log
+```
+
+A notebook-kernel `IDLE` status does not describe the detached model process. WebSocket monitoring may disconnect without stopping training. Use actual status/results, and never allocate another GPU or resubmit on a monitoring error. Mac's working official SSH transport is:
 
 ```sh
 ssh -o ConnectTimeout=60 -o "ProxyCommand=/Users/wu/.local/bin/colab ssh --proxy-mode -s exp-e3-formal -i /Users/wu/.ssh/id_ed25519" -i /Users/wu/.ssh/id_ed25519 root@colab-runtime
 ```
 
-Use `colab upload`/`download` for file transfers; the SCP subsystem was unavailable. Do not restart the kernel or resubmit the experiment merely because a monitoring connection fails. `colab status` may show IDLE for the notebook kernel while detached model processes continue; inspect the actual job status/results.
+## Completed cache and durable artifacts
 
-Archive outputs before releasing the runtime, including partial outputs after a real failure. Attempt `02` has a `data` symlink to attempt `01`; archiving that symlink does not copy the actual dataset. Run these on the existing runtime with its staged private rclone environment, keeping large data off the AWS controller:
+- Prepared6,000 train /200 dev /6,000 test data remains under attempt01 `workspace/data`; attempt02 `data` is a symlink there. The unchanged train SHA256 is `606fd2dda50be0aa5dfc091617520a8850942c5fe6585ba9ab92941f4951bbab`.
+- Direct evaluation retained **2,102 rows**: GSM500, Hotpot500, Symbolic1102. Core base-tools completed **1,000 rows**. These generations will be reused by task ID, not repeated.
+- Actual successful rclone copies: `gdrive:exp/datasets/e3`; `gdrive:exp/runs/E3/snapshots/direct-before-priority`; `gdrive:exp/runs/E3/results/core/`; `gdrive:exp/runs/E3/snapshots/cold-before-batch128` (91 accepted /620 attempts at that snapshot).
+- Core baseline report/raw-derived package: `gdrive:exp/runs/E3/analysis/core-baseline-artifacts.tgz` (4.26MB). Local report: `results/core-scored-v2/baseline-summary.md`; its JSON explicitly sets `experiment_complete=false` and preserves negative results, v1 scores, format compliance and confidence intervals.
+- Source archives are under `gdrive:exp/runs/E3/source/`, including `beb13aa.tgz` and `63a0c1d.tgz`. Do not put datasets/models on the2GB AWS host; restore them directly into the assigned Colab runtime.
+- No human annotation or review is claimed. Full trained comparisons, final CU accounting and ten before/after training pairs remain unfinished.
 
-```sh
-export RCLONE_HEADER='X-Goog-User-Project:pi-workspace-wu-4b7f3a'
-rclone copy /content/experiment-runs/E3-formal-independent-20261104-01/workspace/data gdrive:exp/datasets/e3
-rclone copy /content/experiment-runs/E3-formal-independent-20261104-02/workspace/results gdrive:exp/runs/E3/results
-```
+## Checkpoints and recovery
 
-Only copy completed checkpoint directories while training is active. A whole-results copy is a final/paused-run archive; checkpoints are copied after saving. If Drive is unavailable, retain runtime/local files and report the failed copy. Native Drive mounting is not used.
+SFT saves `results/cold-42/checkpoint-0025`, `-0050`, `-0063`, plus `adapter`; GRPO saves every50 steps through `results/grpo-42/checkpoint-0300`. These are **future paths until files actually appear**. Closed checkpoints copy to `gdrive:exp/runs/E3/<run-directory>/<checkpoint-directory>`. Collection files copy to `.../data/` on completion; evaluation files to `.../results/` or `.../results/core/`. Private rclone configuration and the quota-project header are already staged in `/content/experiment-env.json`; never print its contents.
 
-Core baseline report: `results/core-scored-v2/baseline-summary.md` and JSON. This is an explicitly incomplete experiment report, with genuine negative results, original v1 scores and paired confidence intervals.
-
-Actual saved originals: `gdrive:exp/runs/E3/snapshots/direct-before-priority` (2,102 rows, rclone rc0). Prepared data: `gdrive:exp/datasets/e3` (rc0). Cold snapshot: `gdrive:exp/runs/E3/snapshots/cold-before-batch128` (91 accepted / 620 attempts, rc0). Source archives include `beb13aa.tgz` and `63a0c1d.tgz` under `gdrive:exp/runs/E3/source/` (rc0).
-
-## Runtime setup and formal data
-
-The active runtime above is already assigned. The following commands describe setup for an explicitly scheduled recovery, not an instruction to launch a second copy. Do not allocate a new Colab runtime or run large-data preparation on the 2 GB AWS orchestrator. The shared transport starts commands in `/content/experiment-runs/<run_id>/workspace`; the example below uses run ID `e3-formal`. Controller supplies private rclone configuration separately:
+After a real failure, preserve the run status/log and resume only the stopped stage in the same workspace. Collection reuses accepted IDs/attempt counts; its changed batch segments are recorded in `.executions.jsonl`. SFT/GRPO resume uses the latest checkpoint that actually exists:
 
 ```sh
-cd /content/experiment-runs/e3-formal/workspace
-export RCLONE_HEADER='X-Goog-User-Project:pi-workspace-wu-4b7f3a'
-python -m pip install -e '.[train]'
-python -m pip uninstall -y torchvision torchaudio
-python scripts/run.py prepare --out data
-rclone copy data gdrive:exp/datasets/e3
-export EXP_CHECKPOINT_REMOTE='gdrive:exp/runs/E3'
-```
-
-Use the workspace's local `data/` directory on the Colab runtime for training, not a Drive-mounted dataset. `prepare` writes 3,000 train + 100 dev rows each for GSM8K and HotpotQA, 500 final rows each, and full GSM-Symbolic main instances. It records actual dataset revision hashes, license and split provenance. Native Drive mounting is not part of unattended execution.
-
-## Formal commands
-
-Run A100 / 1.5B using `configs/a100.json`. If only L4 is available and root chooses the smaller model, use `configs/l4-full.json` and disclose 0.5B. Do not load the E2 1.5B adapter into a 0.5B model.
-
-```sh
-python scripts/run.py evaluate --config configs/a100.json --data data/test.jsonl --out results/eval-base-direct.jsonl --condition base-direct
-python scripts/run.py evaluate --config configs/a100.json --data data/test.jsonl --out results/eval-base-tools.jsonl --condition base-tools
-bash scripts/run_seeds.sh configs/a100.json
-```
-
-The seed script independently samples correct cold-start trajectories, trains a new SFT adapter, evaluates it, performs 300 GRPO steps and evaluates final adapters for seeds 42/43/44. These stages need not wait for E2. E2 is a separate baseline, never the cold-start initialization. Its local working path is not guaranteed to exist on an E3 runtime: wait for E2/root to provide the exported adapter location and copy those adapter files into the path below before this command. The completed E3 comparison waits for that real E2 artifact; do not create placeholder weights:
-
-```sh
-# E2 exports <E2_ARTIFACTS>/main-seed42/adapter; working default /content/e2-artifacts/main-seed42/adapter.
-export E2_ADAPTER=/content/e2-artifacts/main-seed42/adapter
-python scripts/run.py evaluate --config configs/a100.json --data data/test.jsonl --out results/eval-e2.jsonl --condition e2-lora --adapter "$E2_ADAPTER"
-mkdir -p results/scored-v2
-for path in results/eval-*.jsonl; do
-  python scripts/run.py rescore --data data/test.jsonl --input "$path" --out "results/scored-v2/$(basename "$path")"
-done
-python scripts/run.py report results/scored-v2/eval-*.jsonl
-python scripts/verify_completion.py
-rclone copy results gdrive:exp/runs/E3/results
-```
-
-## Simple checkpoints and resume
-
-Saving is ordinary model/tokenizer output plus `torch.save` for optimizer/RNG; when `EXP_CHECKPOINT_REMOTE` is set, follow with `rclone copy`. No mandatory hook, receipt validation or durable-pointer state machine remains. Private `RCLONE_CONFIG` and approved `RCLONE_HEADER` come from root, never Git.
-
-Remote layout: `gdrive:exp/runs/E3/grpo-42/checkpoint-0050`. Copies failing with nonzero exit keep the local checkpoint. Retry with `python scripts/run.py copy-checkpoint results/grpo-42/checkpoint-0050`.
-
-```sh
-rclone copy gdrive:exp/runs/E3/grpo-42/checkpoint-0050 results/grpo-42/checkpoint-0050
+python scripts/run.py collect --config configs/a100.json --data data/train.jsonl --out data/cold-42.jsonl --seed 42 --target 500 --batch-size 128
+# Example only after the named checkpoint exists:
+python scripts/run.py sft --config configs/a100.json --data data/cold-42.jsonl --out results/cold-42 --seed 42 --resume results/cold-42/checkpoint-0025
 python scripts/run.py train --config configs/a100.json --data data/train.jsonl --dev data/dev.jsonl --out results/grpo-42 --seed 42 --adapter results/cold-42/adapter --resume results/grpo-42/checkpoint-0050
 ```
 
-Also restore the original cold-SFT adapter or SFT checkpoint. SFT resumes using `sft --resume <checkpoint>` with the same original arguments. Collection and evaluation resume by task IDs. Archive collection data, evaluation rows and logs separately with rclone; checkpoint copying covers checkpoint directories only.
-
-## Required result work
-
-- Uniformly rescore every condition to v2 without regenerating or overwriting original outputs; retain v1 scores and format compliance. See `docs/scoring.md`.
-
-- Transfer E2 main adapter once available, run its independent comparison, and finish all seeds/conditions.
-- Compare measured GSM8K with Qwen report Table 10 references: 1.5B 73.2%, 0.5B 49.6%; prompt/shot/extraction differences must be disclosed.
-- Fill actual CU/session cost ledger and ten before/after trajectory pairs. Only report observed reward-exploitation examples, not invented ones.
-- Keep Python disabled if namespace isolation is unavailable; report calculator/search-only capability.
-- Preserve source licenses. GSM-Symbolic is CC-BY-NC-ND; do not publish modified data. Public dataset contamination remains a limitation.
-- `verify_completion.py` checks actual formal coverage, final steps/adapters and raw result consistency. It must remain incomplete until all real formal stages and comparisons finish; the current partial base-direct evaluation does not satisfy completion.
+Keep using the existing detached execution/exit-code transport for recovery; do not rerun the entire priority script over completed SFT directories. No new scheduling framework is needed. Real failures and planned interruptions remain in the run root: initial torchvision incompatibility, JSONL U+2028 reader failure, and archived `serial-*`, `before-priority-*`, `jsonl-failure-*`, `cold32-*` records. Details are in `docs/execution.md`.
