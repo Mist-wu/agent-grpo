@@ -60,6 +60,8 @@ Active attempt `E3-formal-independent-20261104-03` uses A100 session `exp-e3-rec
 
 2026-11-05 05:04 JST: step100 dev evaluation complete for both datasets; actual training reached step101/300. `colab usage`: 67.86 CU remaining, 17.34 CU/hour, four assignments; shared-account readings only, not E3-attributed cost. Existing run preserved.
 
+2026-11-05 05:11 JST: seed42 GRPO reached step104/300. `colab usage`: 66.41 CU remaining, 17.34 CU/hour, four assignments; shared-account readings only, not E3-attributed cost. Existing run preserved.
+
 ## Historical observations
 
 | Run | Session | Requested / allocated GPU | Job start | Latest stage | Observed CU cost |
