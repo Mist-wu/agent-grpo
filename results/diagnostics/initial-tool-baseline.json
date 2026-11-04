@@ -1,0 +1,197 @@
+{
+  "scope": "initial actual core base-tools snapshot",
+  "n": 128,
+  "source_sha256": "fa6c64b54b501e3866fc8db9a2e438f23e2ff2a5d42ab57f9e2b6bc0a96848d9",
+  "model_regenerated": false,
+  "human_review": false,
+  "tool_limit_rows": 35,
+  "correctness_sum_at_tool_limit": 0.0,
+  "examples": [
+    {
+      "task_id": "gsm8k:test:588",
+      "reward": {
+        "total": -0.1,
+        "correctness": 0.0,
+        "parse_bonus": 0.1,
+        "tool_penalty": 0.2,
+        "tool_calls": 4,
+        "strict_correctness_v1": 0.0,
+        "final_format_compliant": false,
+        "score_version": "v2-qwen-gsm-last-number-hotpot-f1"
+      },
+      "turns": [
+        {
+          "assistant": "<tool_call>\n{\"name\": \"search\", \"arguments\": {\"query\": \"Jared typing speed increase\"}}\n</tool_call>",
+          "generated_tokens": 22,
+          "tools": [
+            {
+              "call": {
+                "name": "search",
+                "arguments": {
+                  "query": "Jared typing speed increase"
+                }
+              },
+              "response": {
+                "ok": true,
+                "result": []
+              }
+            }
+          ]
+        },
+        {
+          "assistant": "<tool_call>\n{\"name\": \"search\", \"arguments\": {\"query\": \"Jared typing speed increase\"}}\n</tool_call>",
+          "generated_tokens": 22,
+          "tools": [
+            {
+              "call": {
+                "name": "search",
+                "arguments": {
+                  "query": "Jared typing speed increase"
+                }
+              },
+              "response": {
+                "ok": true,
+                "result": []
+              }
+            }
+          ]
+        },
+        {
+          "assistant": "<tool_call>\n{\"name\": \"search\", \"arguments\": {\"query\": \"Jared typing speed increase\"}}\n</tool_call>",
+          "generated_tokens": 22,
+          "tools": [
+            {
+              "call": {
+                "name": "search",
+                "arguments": {
+                  "query": "Jared typing speed increase"
+                }
+              },
+              "response": {
+                "ok": true,
+                "result": []
+              }
+            }
+          ]
+        },
+        {
+          "assistant": "<tool_call>\n{\"name\": \"search\", \"arguments\": {\"query\": \"Jared typing speed increase\"}}\n</tool_call>",
+          "generated_tokens": 22,
+          "tools": [
+            {
+              "call": {
+                "name": "search",
+                "arguments": {
+                  "query": "Jared typing speed increase"
+                }
+              },
+              "response": {
+                "ok": true,
+                "result": []
+              }
+            }
+          ]
+        },
+        {
+          "assistant": "<tool_call>\n{\"name\": \"search\", \"arguments\": {\"query\": \"Jared typing speed increase\"}}\n</tool_call>",
+          "generated_tokens": 22,
+          "tools": [],
+          "tool_limit_reached": true
+        }
+      ]
+    },
+    {
+      "task_id": "gsm8k:test:906",
+      "reward": {
+        "total": -0.1,
+        "correctness": 0.0,
+        "parse_bonus": 0.1,
+        "tool_penalty": 0.2,
+        "tool_calls": 4,
+        "strict_correctness_v1": 0.0,
+        "final_format_compliant": false,
+        "score_version": "v2-qwen-gsm-last-number-hotpot-f1"
+      },
+      "turns": [
+        {
+          "assistant": "<tool_call>\n{\"name\": \"search\", \"arguments\": {\"query\": \"Tim shoe boxes\"}}\n</tool_call>",
+          "generated_tokens": 20,
+          "tools": [
+            {
+              "call": {
+                "name": "search",
+                "arguments": {
+                  "query": "Tim shoe boxes"
+                }
+              },
+              "response": {
+                "ok": true,
+                "result": []
+              }
+            }
+          ]
+        },
+        {
+          "assistant": "<tool_call>\n{\"name\": \"search\", \"arguments\": {\"query\": \"Tim shoe boxes\"}}\n</tool_call>",
+          "generated_tokens": 20,
+          "tools": [
+            {
+              "call": {
+                "name": "search",
+                "arguments": {
+                  "query": "Tim shoe boxes"
+                }
+              },
+              "response": {
+                "ok": true,
+                "result": []
+              }
+            }
+          ]
+        },
+        {
+          "assistant": "<tool_call>\n{\"name\": \"search\", \"arguments\": {\"query\": \"Tim shoe boxes\"}}\n</tool_call>",
+          "generated_tokens": 20,
+          "tools": [
+            {
+              "call": {
+                "name": "search",
+                "arguments": {
+                  "query": "Tim shoe boxes"
+                }
+              },
+              "response": {
+                "ok": true,
+                "result": []
+              }
+            }
+          ]
+        },
+        {
+          "assistant": "<tool_call>\n{\"name\": \"search\", \"arguments\": {\"query\": \"Tim shoe boxes\"}}\n</tool_call>",
+          "generated_tokens": 20,
+          "tools": [
+            {
+              "call": {
+                "name": "search",
+                "arguments": {
+                  "query": "Tim shoe boxes"
+                }
+              },
+              "response": {
+                "ok": true,
+                "result": []
+              }
+            }
+          ]
+        },
+        {
+          "assistant": "<tool_call>\n{\"name\": \"search\", \"arguments\": {\"query\": \"Tim shoe boxes\"}}\n</tool_call>",
+          "generated_tokens": 20,
+          "tools": [],
+          "tool_limit_reached": true
+        }
+      ]
+    }
+  ]
+}

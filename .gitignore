@@ -12,3 +12,7 @@ logs/
 .cache/
 results/**/adapter/
 results/**/checkpoint-*/
+# Raw generations stay on the runtime, Drive and local artifact directories.
+results/live-*/
+results/core-derived/
+results/**/*.jsonl*

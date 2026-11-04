@@ -1,0 +1,43 @@
+{
+  "complete": false,
+  "planned_total": 6000,
+  "observed_total": 2102,
+  "datasets": [
+    {
+      "dataset": "gsm8k",
+      "n": 500,
+      "v2_mean": 0.638,
+      "strict_v1_mean": 0.03,
+      "format_compliance": 0.004,
+      "truncation": 0.026,
+      "ci95": [
+        0.6,
+        0.678
+      ],
+      "ci_unit": "question"
+    },
+    {
+      "dataset": "hotpotqa",
+      "n": 500,
+      "v2_mean": 0.1363357463244242,
+      "strict_v1_mean": 0.1363357463244242,
+      "format_compliance": 0.022,
+      "truncation": 0.006,
+      "ci95": [
+        0.11583593697562891,
+        0.15898490518210806
+      ],
+      "ci_unit": "question"
+    },
+    {
+      "dataset": "gsm-symbolic",
+      "n": 1102,
+      "v2_mean": 0.5961887477313974,
+      "strict_v1_mean": 0.017241379310344827,
+      "format_compliance": 0.0027223230490018148,
+      "truncation": 0.06715063520871144,
+      "ci95": null,
+      "ci_note": "Full 5,000-row template-cluster evaluation remains incomplete."
+    }
+  ]
+}

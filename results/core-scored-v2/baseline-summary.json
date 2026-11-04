@@ -1,0 +1,241 @@
+{
+  "formal": true,
+  "provenance": [
+    {
+      "result_file": "results/core-scored-v2/eval-base-direct.jsonl",
+      "created_at": "2026-11-04T12:29:03.567175+00:00",
+      "git_commit": "6eb668b51a14e9f3e2ab4c1dcf8d993b1b9a615c",
+      "git_dirty": false,
+      "config": {
+        "model": "Qwen/Qwen2.5-1.5B-Instruct",
+        "model_revision": "989aa7980e4cf806f80c7fef2b1adb7bc71aa306",
+        "device": "cuda",
+        "dtype": "bfloat16",
+        "device_profile": "a100",
+        "temperature": 1.0,
+        "max_new_tokens": 512,
+        "max_sequence_length": 4096,
+        "group_size": 8,
+        "questions_per_step": 8,
+        "update_epochs": 2,
+        "steps": 300,
+        "learning_rate": 1e-05,
+        "lora_rank": 16,
+        "kl_beta": 0.04,
+        "clip_epsilon": 0.2,
+        "checkpoint_every": 50,
+        "python_tool": false,
+        "sft_gradient_accumulation": 8,
+        "sft_learning_rate": 0.0002,
+        "seed": 42
+      },
+      "data_sha256": "1817fbe3e683a7f9c52c5257753b78e4571722c874b8a4a16106b48021053fd8",
+      "torch": "2.6.0+cu124",
+      "cuda": "12.4",
+      "gpu": "NVIDIA A100-SXM4-40GB",
+      "model_revision_resolved": "989aa7980e4cf806f80c7fef2b1adb7bc71aa306",
+      "condition": "base-direct",
+      "seed": 42,
+      "adapter": null,
+      "split": "test",
+      "tasks": 1000,
+      "scope": "core-1000",
+      "derived_from": {
+        "path": "results/live-attempt02/eval-base-direct.jsonl",
+        "source_sha256": "736c07b119d02b782915acf5584cfe587c2e1a7c6541e47ba8c6d105559d75da",
+        "source_full_plan_tasks": 6000,
+        "source_observed_rows": 2102,
+        "selection": "all GSM8K and HotpotQA final-test task IDs",
+        "regenerated": false
+      },
+      "score_version": "v2-qwen-gsm-last-number-hotpot-f1",
+      "rescoring": {
+        "created_at": "2026-11-04T13:38:13.511189+00:00",
+        "source_file": "results/core-derived/eval-base-direct.jsonl",
+        "source_sha256": "4f8adcfae1f7cfe74a0138cd8e27dbd2ea1c05441b06da805fdf9ef1ff7b6a7f",
+        "rows": 1000,
+        "complete": true,
+        "regenerated": false
+      }
+    },
+    {
+      "result_file": "results/core-scored-v2/eval-base-tools.jsonl",
+      "created_at": "2026-11-04T13:18:54.853703+00:00",
+      "git_commit": "9a3c642747c28dc94a81296b421b8669788f2e80",
+      "score_version": "v2-qwen-gsm-last-number-hotpot-f1",
+      "git_dirty": false,
+      "config": {
+        "model": "Qwen/Qwen2.5-1.5B-Instruct",
+        "model_revision": "989aa7980e4cf806f80c7fef2b1adb7bc71aa306",
+        "device": "cuda",
+        "dtype": "bfloat16",
+        "device_profile": "a100",
+        "temperature": 1.0,
+        "max_new_tokens": 512,
+        "max_sequence_length": 4096,
+        "group_size": 8,
+        "questions_per_step": 8,
+        "update_epochs": 2,
+        "steps": 300,
+        "learning_rate": 1e-05,
+        "lora_rank": 16,
+        "kl_beta": 0.04,
+        "clip_epsilon": 0.2,
+        "checkpoint_every": 50,
+        "python_tool": false,
+        "sft_gradient_accumulation": 8,
+        "sft_learning_rate": 0.0002,
+        "seed": 42
+      },
+      "data_sha256": "1817fbe3e683a7f9c52c5257753b78e4571722c874b8a4a16106b48021053fd8",
+      "torch": "2.6.0+cu124",
+      "cuda": "12.4",
+      "gpu": "NVIDIA A100-SXM4-40GB",
+      "model_revision_resolved": "989aa7980e4cf806f80c7fef2b1adb7bc71aa306",
+      "condition": "base-tools",
+      "seed": 42,
+      "adapter": null,
+      "split": "test",
+      "tasks": 1000,
+      "rescoring": {
+        "created_at": "2026-11-04T13:38:13.129485+00:00",
+        "source_file": "results/live-attempt02/core/eval-base-tools.jsonl",
+        "source_sha256": "d7086a0af5bded8c8266f7df4e43ea2f8ca4775976e6784fb0f0d75e4c9f36e7",
+        "rows": 1000,
+        "complete": true,
+        "regenerated": false
+      }
+    }
+  ],
+  "evaluations": [
+    {
+      "condition": "base-direct",
+      "seed": 42,
+      "dataset": "gsm8k",
+      "n": 500,
+      "mean": 0.638,
+      "ci95": [
+        0.6,
+        0.678
+      ],
+      "ci_unit": "question",
+      "score_version": "v2-qwen-gsm-last-number-hotpot-f1",
+      "strict_v1_mean": 0.03,
+      "format_compliance": 0.004,
+      "tool_calls_mean": 0.0,
+      "truncated_fraction": 0.026
+    },
+    {
+      "condition": "base-direct",
+      "seed": 42,
+      "dataset": "hotpotqa",
+      "n": 500,
+      "mean": 0.13633574632442422,
+      "ci95": [
+        0.11583593697562891,
+        0.15898490518210806
+      ],
+      "ci_unit": "question",
+      "score_version": "v2-qwen-gsm-last-number-hotpot-f1",
+      "strict_v1_mean": 0.13633574632442422,
+      "format_compliance": 0.022,
+      "tool_calls_mean": 0.0,
+      "truncated_fraction": 0.006
+    },
+    {
+      "condition": "base-tools",
+      "seed": 42,
+      "dataset": "gsm8k",
+      "n": 500,
+      "mean": 0.182,
+      "ci95": [
+        0.15,
+        0.216
+      ],
+      "ci_unit": "question",
+      "score_version": "v2-qwen-gsm-last-number-hotpot-f1",
+      "strict_v1_mean": 0.004,
+      "format_compliance": 0.002,
+      "tool_calls_mean": 1.966,
+      "truncated_fraction": 0.004
+    },
+    {
+      "condition": "base-tools",
+      "seed": 42,
+      "dataset": "hotpotqa",
+      "n": 500,
+      "mean": 0.10478652449591727,
+      "ci95": [
+        0.09345499449300762,
+        0.11731875590317124
+      ],
+      "ci_unit": "question",
+      "score_version": "v2-qwen-gsm-last-number-hotpot-f1",
+      "strict_v1_mean": 0.10478652449591727,
+      "format_compliance": 0.004,
+      "tool_calls_mean": 1.054,
+      "truncated_fraction": 0.0
+    }
+  ],
+  "seed_summary": [
+    {
+      "condition": "base-direct",
+      "dataset": "gsm8k",
+      "seeds": 1,
+      "mean": 0.638,
+      "std": null
+    },
+    {
+      "condition": "base-direct",
+      "dataset": "hotpotqa",
+      "seeds": 1,
+      "mean": 0.13633574632442422,
+      "std": null
+    },
+    {
+      "condition": "base-tools",
+      "dataset": "gsm8k",
+      "seeds": 1,
+      "mean": 0.182,
+      "std": null
+    },
+    {
+      "condition": "base-tools",
+      "dataset": "hotpotqa",
+      "seeds": 1,
+      "mean": 0.10478652449591727,
+      "std": null
+    }
+  ],
+  "limitations": [
+    "Public benchmarks may be contaminated; GSM-Symbolic remains derived from GSM8K.",
+    "Python tool is disabled unless Linux isolation probe passed.",
+    "No claim of speed, convergence, or positive improvement without results."
+  ],
+  "scope": "two core baselines only: GSM8K500 and HotpotQA500",
+  "experiment_complete": false,
+  "deferred": "All training conditions and full GSM-Symbolic evaluations remain required.",
+  "paired_tool_minus_direct": [
+    {
+      "dataset": "gsm8k",
+      "n": 500,
+      "mean_tool_minus_direct": -0.456,
+      "ci95": [
+        -0.504,
+        -0.406
+      ],
+      "ci_unit": "paired_question"
+    },
+    {
+      "dataset": "hotpotqa",
+      "n": 500,
+      "mean_tool_minus_direct": -0.031549221828506925,
+      "ci95": [
+        -0.053245203404174504,
+        -0.010781497383999156
+      ],
+      "ci_unit": "paired_question"
+    }
+  ],
+  "analysis_created_at": "2026-11-04T14:01:23.228813+00:00"
+}
