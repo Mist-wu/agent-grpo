@@ -1,5 +1,9 @@
 # E3 live handoff
 
+## 2026-11-05 00:56 JST: GRPO progress
+
+The existing foreground `E3-formal-independent-20261104-03` remains running on `exp-e3-recovery-a100`; actual seed 42 GRPO training has reached **step 7/300**. Collected the seven actual step records as `results/collected/seed42/grpo-42-train-steps1-7.jsonl` using the `colab download` command for `results/grpo-42/train.jsonl` below. The output subscriber remains active. No GRPO checkpoint or final evaluation has been observed; step 6 had 3/64 truncated trajectories and step 7 had 1/64, recorded without interpreting these few steps as a trend. Shared account usage: 135.79 CU, 17.34 CU/hour across four assignments, not E3-specific. The separate E2 adapter comparison still awaits available GPU capacity; do not interrupt or duplicate this run.
+
 ## 2026-11-05 00:49 JST: E2 comparison capacity and GRPO
 
 The existing independent A100 run `E3-formal-independent-20261104-03` remains running and has completed GRPO **5/300 steps**, as shown by the downloaded output and `results/collected/seed42/grpo-42-train-steps1-5.jsonl`. No GRPO checkpoint has yet been observed. Its real output subscriber is active and has not been replaced. Shared account usage at 00:48 was 137.24 CU and 17.34 CU/hour across four assignments, not an E3-specific cost.
