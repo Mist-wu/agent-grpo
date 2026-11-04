@@ -35,7 +35,7 @@ def main():
             p.add_argument("--dev")
         if name == "evaluate":
             p.add_argument("--condition", choices=["base-direct", "base-tools", "e2-lora", "cold-sft", "grpo"], required=True)
-            p.add_argument("--batch-size", type=int, default=int(os.environ.get("E3_TOOL_BATCH_SIZE", "8")), help="Batch size for greedy evaluation")
+            p.add_argument("--batch-size", type=int, default=int(os.environ.get("E3_TOOL_BATCH_SIZE", "32")), help="Batch size for greedy evaluation")
     report = sub.add_parser("report")
     report.add_argument("results", nargs="+")
     report.add_argument("--out", default="results/formal-summary.json")

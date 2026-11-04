@@ -15,5 +15,5 @@ if [ ! -f data/sources.json ]; then
   python scripts/run.py prepare --out data
 fi
 python scripts/run.py evaluate --config "$config" --data data/test.jsonl --out results/eval-base-direct.jsonl --condition base-direct --batch-size "${E3_DIRECT_BATCH_SIZE:-16}"
-python scripts/run.py evaluate --config "$config" --data data/test.jsonl --out results/eval-base-tools.jsonl --condition base-tools --batch-size "${E3_TOOL_BATCH_SIZE:-8}"
+python scripts/run.py evaluate --config "$config" --data data/test.jsonl --out results/eval-base-tools.jsonl --condition base-tools --batch-size "${E3_TOOL_BATCH_SIZE:-32}"
 bash scripts/run_seeds.sh "$config"

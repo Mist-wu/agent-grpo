@@ -48,7 +48,7 @@ def collect(config_path, data_path, out_path, seed=42, target=500, attempts_per_
     accepted, attempted = len(accepted_ids), len(attempts)
     pending = [task for task in tasks if task.id not in accepted_ids and counts.get(task.id, 0) < attempts_per_question]
     cursor = 0
-    batch_size = config.get("rollout_batch_size", 8)
+    batch_size = config.get("rollout_batch_size", 32)
     meta["rollout_batch_size"] = batch_size
     while accepted < target and cursor < len(pending):
         batch = pending[cursor:cursor + min(batch_size, target - accepted)]
