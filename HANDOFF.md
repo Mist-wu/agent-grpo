@@ -2,11 +2,24 @@
 
 ## State and scope
 
-Code and formal commands are ready for the scheduler. E3 has not completed any real formal training; no E3 GPU or paid API run has started, and formal metrics are absent. Dedicated preliminary-run scripts, results and debug configurations were removed at the user's request. Proceed directly to the formal pipeline.
+The independent formal E3 campaign has been submitted to the assigned A100 session. Latest observed state is RUNNING, with dependencies downloading/installing; actual GRPO training has not yet been observed and no complete formal results exist. Dedicated preliminary-run scripts, results and debug configurations were removed at the user's request. Proceed directly to the formal pipeline.
 
 Existing implementation: strict Qwen tool protocol shared with E2; calculator, BM25 search and optional isolated Python; source-normalized dataset preparation; correct-trajectory collection; action-only SFT; clipped GRPO with frozen old/reference log probabilities; resumable checkpoints; final-test evaluation and three-seed summaries.
 
-## 2026-11-04 coordination milestone
+## Live campaign handoff
+
+- Session: `exp-e3-formal`; A100 assignment confirmed by root, endpoint `gpu-a100-s-ass1c0-fz5a9fduhlbu`.
+- Run ID: `E3-formal-independent-20261104-01`; submitted at 2026-11-04 21:15:01 JST.
+- Runtime source: `8d811623127094d0e13ea9252653e2269f1be191`, clean. The launcher is executing the original `configs/a100.json` (1.5B), without a preliminary run.
+- Status observed: `running`, PID `1997`, return code unset. `output.log` shows installation of the pinned training stack, including the real torch 2.6.0/CUDA dependencies. This is not a claim that training has already completed or that a checkpoint exists.
+- Server receipt/status/log directory: `/srv/exp-runner/state/remote/E3-formal-independent-20261104-01`.
+- Runtime directory: `/content/experiment-runs/E3-formal-independent-20261104-01`; code under `workspace/`, log at `output.log`.
+- Submitted command: `env EXP_CHECKPOINT_REMOTE=gdrive:exp/runs/E3 bash scripts/run_formal.sh configs/a100.json`.
+- Stages: formal data preparation, base-direct, base-tools, then seeds 42/43/44 each with cold-start collection/SFT, SFT evaluation, 300-step GRPO, and final GRPO evaluation. E2 adapter comparison is explicitly not part of this independent launch and remains pending the actual E2 export.
+
+Root owns ongoing polling and allocation. Do not submit a second copy of this run or allocate another session. Local/remote code writing is frozen after this handoff; documentation-only commit does not change the launched source snapshot.
+
+## Earlier 2026-11-04 coordination milestone
 
 Both GPU assignments are occupied by E2 (`exp-preflight-l4`) and E5 (`exp-e5-formal`); the CPU assignment is E1 (`exp-e1-prep`). `colab usage` reported 197.13 CU, 3.96 CU/hour total, and three active assignments. Do not start another GPU job until a slot is released. E2's formal baseline receipt is `/srv/exp-runner/state/remote/E2-formal-baselines-20261104-01`; its actual seed-42 adapter export is not yet available. The E2 and E3 `tool_format.py` files were compared and are identical at E2 commit `00932e4` and E3 parent commit `eeea3ce`.
 
@@ -19,7 +32,7 @@ PYTHONPATH=/srv/exp-runner/app:/srv/exp-runner/app/common python3 -m exp_common.
 PYTHONPATH=/srv/exp-runner/app:/srv/exp-runner/app/common python3 -m exp_common.collect --session SESSION --run-id E3-formal-independent-20261104-01 --output-dir /srv/exp-runner/state/remote/E3-formal-independent-20261104-01 results data
 ```
 
-These commands have not been submitted. Collect outputs into this repository before releasing a runtime, including partial outputs after failure; retain the receipt and local results if Drive is unavailable. For Drive checkpoint copies, set `EXP_CHECKPOINT_REMOTE` on the remote job only when Drive is available, as described below. Evaluate the actual E2 adapter independently once exported.
+The launch above has now been submitted to `exp-e3-formal`; use only its polling/collection commands. Collect outputs into this repository before releasing a runtime, including partial outputs after failure; retain the receipt and local results if Drive is unavailable. For Drive checkpoint copies, set `EXP_CHECKPOINT_REMOTE` on the remote job only when Drive is available, as described below. Evaluate the actual E2 adapter independently once exported.
 
 ## Runtime setup and formal data
 
