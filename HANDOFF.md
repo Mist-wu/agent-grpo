@@ -1,5 +1,11 @@
 # E3 live handoff
 
+## 2026-11-05 06:40 JST: E2 inference progressing; original GRPO preserved
+
+Polled `E3-e2-comparison-20261105-01` using the common poll command below: running, with actual output reaching **2,304/6,000** E2-adapter evaluation rows. No final scores or complete evaluation are claimed. Foreground host client PIDs91277/91283 remain present; do not add another subscriber or resubmit. Downloaded actual `workspace/results/eval-e2-lora-42.jsonl.metadata.json` and `workspace/results/e2-comparison/{env,gpu}.txt` from `exp-e3-e2-eval` into its original receipt directory and copied them to `results/collected/e2-comparison/`. Metadata records NVIDIA L4, BF16, pinned model revision, test hash `e479e0c5eb649a1a987908fe876f0f1688a28f1271e7e34c06cde3ce01b1833d` and 6,000 planned tasks; it is provenance, not completion evidence. Actual greedy evaluation uses temperature0, although shared training config contains temperature1.
+
+Original A100 run reached **144/300 seed42 GRPO steps**; downloaded records copied to `results/collected/seed42/grpo-42-train-steps1-144.jsonl`. Its existing output subscriber remains active. Both jobs are unchanged. Shared usage **40.61 CU**, **17.34 CU/hour**, four assignments, not E3-attributed cost. Next: continue both existing polls below; collect E2 full raw/scored/summary outputs when complete and checkpoint150/dev when produced. Remaining trained evaluations and seeds43/44 unfinished.
+
 ## 2026-11-05 06:30 JST: independent E2 full-test comparison launched
 
 Preserved the original A100 foreground run/output subscriber; downloaded seed42 training records through **139/300** into `results/collected/seed42/grpo-42-train-steps1-139.jsonl`. Capacity became available (three assignments), and `colab new -s exp-e3-e2-eval --gpu L4` succeeded. Staged private runtime configuration with `python3 /srv/exp-runner/app/ops/stage_runtime.py exp-e3-e2-eval`.
