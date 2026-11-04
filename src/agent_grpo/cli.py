@@ -39,6 +39,10 @@ def main():
     report = sub.add_parser("report")
     report.add_argument("results", nargs="+")
     report.add_argument("--out", default="results/formal-summary.json")
+    rescore = sub.add_parser("rescore", help="Apply one scoring version uniformly to saved generations")
+    rescore.add_argument("--data", required=True)
+    rescore.add_argument("--input", required=True)
+    rescore.add_argument("--out", required=True)
     sub.add_parser("probe-python")
     copy = sub.add_parser("copy-checkpoint")
     copy.add_argument("directory")
@@ -59,6 +63,9 @@ def main():
         evaluate(args.config, args.data, args.out, args.condition, args.seed, args.adapter, args.batch_size)
     elif args.command == "report":
         summarize(args.results, args.out)
+    elif args.command == "rescore":
+        from .report import rescore_saved
+        print(json.dumps(rescore_saved(args.data, args.input, args.out)))
     elif args.command == "copy-checkpoint":
         from .training import copy_checkpoint
         copy_checkpoint(args.directory)

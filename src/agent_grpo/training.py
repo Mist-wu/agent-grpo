@@ -81,6 +81,7 @@ def token_logprobs(model, token_ids, device):
 
 def metadata(config, data_path, model=None):
     import torch
+    from .rewards import SCORE_VERSION
     def git(args):
         p = subprocess.run(["git", *args], capture_output=True, text=True)
         return p.stdout.strip() if p.returncode == 0 else "unknown"
@@ -89,7 +90,7 @@ def metadata(config, data_path, model=None):
     runtime_revision = Path(__file__).resolve().parents[2] / ".runtime-revision"
     if runtime_revision.exists():
         commit, dirty = runtime_revision.read_text().strip(), "false"
-    return {"created_at": datetime.now(timezone.utc).isoformat(), "git_commit": commit,
+    return {"created_at": datetime.now(timezone.utc).isoformat(), "git_commit": commit, "score_version": SCORE_VERSION,
             "git_dirty": dirty.lower() == "true" if dirty is not None else bool(git(["status", "--porcelain"])), "config": config,
             "data_sha256": hashlib.sha256(Path(data_path).read_bytes()).hexdigest(),
             "torch": torch.__version__, "cuda": torch.version.cuda,

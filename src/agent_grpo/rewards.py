@@ -4,6 +4,9 @@ from decimal import Decimal, InvalidOperation
 import re
 import string
 
+SCORE_VERSION = "v2-qwen-gsm-last-number-hotpot-f1"
+LAST_NUMBER = re.compile(r"([+-])?(?=([0-9]|\.[0-9]))(0|([1-9](\d{0,2}(,\d{3})*)|\d*))?(\.\d*)?(?=\D|$)")
+
 
 def final_answer(text):
     if "<final>" in text:
@@ -35,6 +38,14 @@ def numeric_answer(text):
         return None
 
 
+def numeric_answer_flexible(text):
+    """Qwen's published GSM8K last-number extraction; no execution of model text."""
+    matches = list(LAST_NUMBER.finditer(text))
+    if not matches:
+        return None
+    return Decimal(matches[-1].group().replace(",", "").replace("+", "").strip())
+
+
 def normalize_answer(text):
     text = text.lower().translate(str.maketrans("", "", string.punctuation))
     return " ".join(re.sub(r"\b(a|an|the)\b", " ", text).split())
@@ -51,10 +62,17 @@ def hotpot_f1(prediction, answer):
     return 2 * shared / (len(p) + len(g))
 
 
-def score_answer(dataset, prediction, answer):
+def score_answer_strict(dataset, prediction, answer):
     if dataset == "hotpotqa":
         return hotpot_f1(prediction, answer)
     pred, gold = numeric_answer(prediction), numeric_answer(answer)
+    return float(pred is not None and gold is not None and pred == gold)
+
+
+def score_answer(dataset, prediction, answer):
+    if dataset == "hotpotqa":
+        return hotpot_f1(prediction, answer)
+    pred, gold = numeric_answer_flexible(prediction), numeric_answer_flexible(answer)
     return float(pred is not None and gold is not None and pred == gold)
 
 
@@ -65,4 +83,7 @@ def reward(task, text, calls, parsed_calls):
     tool_penalty = 0.05 * calls
     return {"total": correctness + parse_bonus - tool_penalty,
             "correctness": correctness, "parse_bonus": parse_bonus,
-            "tool_penalty": tool_penalty, "tool_calls": calls}
+            "tool_penalty": tool_penalty, "tool_calls": calls,
+            "strict_correctness_v1": score_answer_strict(task.dataset, text, task.answer),
+            "final_format_compliant": bool(re.search(r"<final>[^<>]+</final>\s*$", text)),
+            "score_version": SCORE_VERSION}
