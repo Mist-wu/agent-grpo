@@ -2,7 +2,7 @@
 
 ## State and scope
 
-The independent formal E3 campaign has been submitted to the assigned A100 session. Latest observed state is RUNNING, with dependencies downloading/installing; actual GRPO training has not yet been observed and no complete formal results exist. Dedicated preliminary-run scripts, results and debug configurations were removed at the user's request. Proceed directly to the formal pipeline.
+The independent formal E3 campaign is RUNNING on its assigned A100. At 2026-11-04 21:32 JST, the recovered attempt had written 20/6,000 actual base-direct evaluation rows using Qwen2.5-1.5B-Instruct; A100 GPU memory usage was 3,690 MiB and utilization 28%. Cold-SFT and GRPO have not yet been reached, and no complete formal training results exist. Dedicated preliminary-run scripts, results and debug configurations were removed at the user's request. Proceed directly to the formal pipeline.
 
 Existing implementation: strict Qwen tool protocol shared with E2; calculator, BM25 search and optional isolated Python; source-normalized dataset preparation; correct-trajectory collection; action-only SFT; clipped GRPO with frozen old/reference log probabilities; resumable checkpoints; final-test evaluation and three-seed summaries.
 
@@ -16,31 +16,36 @@ E2 reports that its pending main adapter is trained from the Glaive fallback (tr
 
 ## Live campaign handoff
 
-- Session: `exp-e3-formal`; A100 assignment confirmed by root, endpoint `gpu-a100-s-ass1c0-fz5a9fduhlbu`.
-- Run ID: `E3-formal-independent-20261104-01`; submitted at 2026-11-04 21:15:01 JST.
-- Runtime source: `8d811623127094d0e13ea9252653e2269f1be191`, clean. The launcher is executing the original `configs/a100.json` (1.5B), without a preliminary run.
-- Status observed: `running`, PID `1997`, return code unset. `output.log` shows installation of the pinned training stack, including the real torch 2.6.0/CUDA dependencies. This is not a claim that training has already completed or that a checkpoint exists.
-- Server receipt/status/log directory: `/srv/exp-runner/state/remote/E3-formal-independent-20261104-01`.
-- Runtime directory: `/content/experiment-runs/E3-formal-independent-20261104-01`; code under `workspace/`, log at `output.log`.
-- Submitted command: `env EXP_CHECKPOINT_REMOTE=gdrive:exp/runs/E3 bash scripts/run_formal.sh configs/a100.json`.
-- Stages: formal data preparation, base-direct, base-tools, then seeds 42/43/44 each with cold-start collection/SFT, SFT evaluation, 300-step GRPO, and final GRPO evaluation. E2 adapter comparison is explicitly not part of this independent launch and remains pending the actual E2 export.
+- Session: `exp-e3-formal`; endpoint `gpu-a100-s-ass1c0-fz5a9fduhlbu`; observed GPU `NVIDIA A100-SXM4-40GB`.
+- Active run ID: `E3-formal-independent-20261104-02`; submitted at 2026-11-04 21:28:33 JST.
+- Runtime source: `6eb668b51a14e9f3e2ab4c1dcf8d993b1b9a615c`, clean. Configuration `configs/a100.json`, model `Qwen/Qwen2.5-1.5B-Instruct`, revision `989aa7980e4cf806f80c7fef2b1adb7bc71aa306`.
+- Observed state: `running`, wrapper PID `5521`, return code unset. The optional vision/audio packages were successfully removed, model loading passed the previous import failure, and base-direct evaluation produced real rows.
+- Server receipt/status/log directory: `/srv/exp-runner/state/remote/E3-formal-independent-20261104-02`.
+- Runtime directory: `/content/experiment-runs/E3-formal-independent-20261104-02`; code under `workspace/`, log at `output.log`.
+- Submitted command: `env EXP_CHECKPOINT_REMOTE=gdrive:exp/runs/E3 E3_DATA_DIR=/content/experiment-runs/E3-formal-independent-20261104-01/workspace/data bash scripts/run_formal.sh configs/a100.json`.
+- Stages: base-direct, base-tools, then seeds 42/43/44 each with cold-start collection/SFT, SFT evaluation, 300-step GRPO, and final GRPO evaluation. E2 adapter comparison is not part of this independent launch and remains pending the actual E2 export.
+- Failed attempt `01` remains recorded with rc1 and duration 246.05 seconds; preserve its directory because it holds the prepared data used by attempt `02`.
 
-Root owns ongoing polling and allocation. Do not submit a second copy of this run or allocate another session. Local/remote code writing is frozen after this handoff; documentation-only commit does not change the launched source snapshot.
+Root owns ongoing polling and allocation. Do not submit a duplicate or allocate another session. Local/server code writing is frozen after this handoff; the documentation commit does not change the launched source snapshot.
 
-## Earlier 2026-11-04 coordination milestone
-
-Both GPU assignments are occupied by E2 (`exp-preflight-l4`) and E5 (`exp-e5-formal`); the CPU assignment is E1 (`exp-e1-prep`). `colab usage` reported 197.13 CU, 3.96 CU/hour total, and three active assignments. Do not start another GPU job until a slot is released. E2's formal baseline receipt is `/srv/exp-runner/state/remote/E2-formal-baselines-20261104-01`; its actual seed-42 adapter export is not yet available. The E2 and E3 `tool_format.py` files were compared and are identical at E2 commit `00932e4` and E3 parent commit `eeea3ce`.
-
-`scripts/run_formal.sh` sequences the independent formal preparation, both base evaluations and the three-seed cold-SFT/GRPO pipeline on an assigned GPU; it records the installed environment and GPU. It does not run the E2 comparison. Once capacity is available, stage private rclone configuration, then submit this real job detached (replace SESSION with the assigned session; use `configs/l4-full.json` only for the disclosed 0.5B L4 fallback):
+Next command, on the AWS controller as `exp-runner`:
 
 ```sh
-python3 /srv/exp-runner/app/ops/stage_runtime.py SESSION
-PYTHONPATH=/srv/exp-runner/app:/srv/exp-runner/app/common python3 -m exp_common.colab --repo /srv/exp-runner/repos/agent-grpo --session SESSION --run-id E3-formal-independent-20261104-01 --output-dir /srv/exp-runner/state/remote/E3-formal-independent-20261104-01 --env-file /content/experiment-env.json --artifact-path results --artifact-path data --detach -- bash scripts/run_formal.sh configs/a100.json
-PYTHONPATH=/srv/exp-runner/app:/srv/exp-runner/app/common python3 -m exp_common.colab --poll --session SESSION --run-id E3-formal-independent-20261104-01 --output-dir /srv/exp-runner/state/remote/E3-formal-independent-20261104-01
-PYTHONPATH=/srv/exp-runner/app:/srv/exp-runner/app/common python3 -m exp_common.collect --session SESSION --run-id E3-formal-independent-20261104-01 --output-dir /srv/exp-runner/state/remote/E3-formal-independent-20261104-01 results data
+export PATH=/srv/exp-runner/runtime/python/bin:/usr/local/bin:/usr/bin:/bin
+export PYTHONPATH=/srv/exp-runner/app:/srv/exp-runner/app/common
+python3 -m exp_common.colab --poll --session exp-e3-formal --run-id E3-formal-independent-20261104-02 --output-dir /srv/exp-runner/state/remote/E3-formal-independent-20261104-02
+colab download -s exp-e3-formal /content/experiment-runs/E3-formal-independent-20261104-02/output.log /srv/exp-runner/state/remote/E3-formal-independent-20261104-02/output.log
 ```
 
-The launch above has now been submitted to `exp-e3-formal`; use only its polling/collection commands. Collect outputs into this repository before releasing a runtime, including partial outputs after failure; retain the receipt and local results if Drive is unavailable. For Drive checkpoint copies, set `EXP_CHECKPOINT_REMOTE` on the remote job only when Drive is available, as described below. Evaluate the actual E2 adapter independently once exported.
+Archive outputs before releasing the runtime, including partial outputs after failure. Attempt `02` has a `data` symlink to attempt `01`; archiving that symlink does not copy the actual dataset. Run the following directly on the assigned Colab runtime with its staged private rclone environment, keeping large data off the AWS controller:
+
+```sh
+export RCLONE_HEADER='X-Goog-User-Project:pi-workspace-wu-4b7f3a'
+rclone copy /content/experiment-runs/E3-formal-independent-20261104-01/workspace/data gdrive:exp/datasets/e3
+rclone copy /content/experiment-runs/E3-formal-independent-20261104-02/workspace/results gdrive:exp/runs/E3/results
+```
+
+Only copy completed checkpoint directories while training is active. A whole-results copy is a final/paused-run archive; checkpoint copies already occur after each checkpoint save. If Drive is unavailable, retain runtime files and report the failed copy; do not claim they are durable. The E2 and E3 `tool_format.py` files were compared and are identical at E2 commit `00932e4` and E3 parent commit `eeea3ce`.
 
 ## Runtime setup and formal data
 
@@ -50,6 +55,7 @@ Run only on an existing runtime assigned by root, after its current job is finis
 cd /content/experiment-runs/e3-formal/workspace
 export RCLONE_HEADER='X-Goog-User-Project:pi-workspace-wu-4b7f3a'
 python -m pip install -e '.[train]'
+python -m pip uninstall -y torchvision torchaudio
 python scripts/run.py prepare --out data
 rclone copy data gdrive:exp/datasets/e3
 export EXP_CHECKPOINT_REMOTE='gdrive:exp/runs/E3'
@@ -98,4 +104,4 @@ Also restore the original cold-SFT adapter or SFT checkpoint. SFT resumes using 
 - Fill actual CU/session cost ledger and ten before/after trajectory pairs. Only report observed reward-exploitation examples, not invented ones.
 - Keep Python disabled if namespace isolation is unavailable; report calculator/search-only capability.
 - Preserve source licenses. GSM-Symbolic is CC-BY-NC-ND; do not publish modified data. Public dataset contamination remains a limitation.
-- `verify_completion.py` checks actual formal coverage, final steps/adapters and raw result consistency. It currently correctly reports incomplete because formal runs have not occurred.
+- `verify_completion.py` checks actual formal coverage, final steps/adapters and raw result consistency. It must remain incomplete until all real formal stages and comparisons finish; the current partial base-direct evaluation does not satisfy completion.
