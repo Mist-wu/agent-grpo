@@ -6,6 +6,21 @@ Code and formal commands are ready for the scheduler. E3 has not completed any r
 
 Existing implementation: strict Qwen tool protocol shared with E2; calculator, BM25 search and optional isolated Python; source-normalized dataset preparation; correct-trajectory collection; action-only SFT; clipped GRPO with frozen old/reference log probabilities; resumable checkpoints; final-test evaluation and three-seed summaries.
 
+## 2026-11-04 coordination milestone
+
+Both GPU assignments are occupied by E2 (`exp-preflight-l4`) and E5 (`exp-e5-formal`); the CPU assignment is E1 (`exp-e1-prep`). `colab usage` reported 197.13 CU, 3.96 CU/hour total, and three active assignments. Do not start another GPU job until a slot is released. E2's formal baseline receipt is `/srv/exp-runner/state/remote/E2-formal-baselines-20261104-01`; its actual seed-42 adapter export is not yet available. The E2 and E3 `tool_format.py` files were compared and are identical at E2 commit `00932e4` and E3 parent commit `eeea3ce`.
+
+`scripts/run_formal.sh` sequences the independent formal preparation, both base evaluations and the three-seed cold-SFT/GRPO pipeline on an assigned GPU; it records the installed environment and GPU. It does not run the E2 comparison. Once capacity is available, stage private rclone configuration, then submit this real job detached (replace SESSION with the assigned session; use `configs/l4-full.json` only for the disclosed 0.5B L4 fallback):
+
+```sh
+python3 /srv/exp-runner/app/ops/stage_runtime.py SESSION
+PYTHONPATH=/srv/exp-runner/app:/srv/exp-runner/app/common python3 -m exp_common.colab --repo /srv/exp-runner/repos/agent-grpo --session SESSION --run-id E3-formal-independent-20261104-01 --output-dir /srv/exp-runner/state/remote/E3-formal-independent-20261104-01 --env-file /content/experiment-env.json --artifact-path results --artifact-path data --detach -- bash scripts/run_formal.sh configs/a100.json
+PYTHONPATH=/srv/exp-runner/app:/srv/exp-runner/app/common python3 -m exp_common.colab --poll --session SESSION --run-id E3-formal-independent-20261104-01 --output-dir /srv/exp-runner/state/remote/E3-formal-independent-20261104-01
+PYTHONPATH=/srv/exp-runner/app:/srv/exp-runner/app/common python3 -m exp_common.collect --session SESSION --run-id E3-formal-independent-20261104-01 --output-dir /srv/exp-runner/state/remote/E3-formal-independent-20261104-01 results data
+```
+
+These commands have not been submitted. Collect outputs into this repository before releasing a runtime, including partial outputs after failure; retain the receipt and local results if Drive is unavailable. For Drive checkpoint copies, set `EXP_CHECKPOINT_REMOTE` on the remote job only when Drive is available, as described below. Evaluate the actual E2 adapter independently once exported.
+
 ## Runtime setup and formal data
 
 Run only on an existing runtime assigned by root, after its current job is finished. Do not allocate a new Colab runtime or run large-data preparation on the 2 GB AWS orchestrator. The shared transport starts commands in `/content/experiment-runs/<run_id>/workspace`; the example below uses run ID `e3-formal`. Controller supplies private rclone configuration separately:
