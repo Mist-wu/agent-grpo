@@ -10,7 +10,7 @@ import random
 import subprocess
 import time
 from .objective import group_advantages, grpo_loss
-from .rollout import sample_trajectory
+from .rollout import sample_trajectory, batch_tool_trajectories
 from .schema import append_jsonl, read_tasks
 from .tools import probe_python_sandbox
 
@@ -168,9 +168,9 @@ def training(config_path, data_path, out_dir, seed, adapter=None, resume=None, d
         sampled = rng.sample(tasks, min(config["questions_per_step"], len(tasks)))
         batch, zero_groups = [], 0
         for task in sampled:
-            trajectories = [sample_trajectory(model, tokenizer, task, temperature=config["temperature"],
-                            max_new_tokens=config["max_new_tokens"], max_sequence_length=config["max_sequence_length"],
-                            enable_python=config.get("python_tool", False)) for _ in range(config["group_size"])]
+            trajectories = batch_tool_trajectories(model, tokenizer, [task] * config["group_size"],
+                temperature=config["temperature"], max_new_tokens=config["max_new_tokens"],
+                max_sequence_length=config["max_sequence_length"], enable_python=config.get("python_tool", False))
             advantages = group_advantages([t.reward["total"] for t in trajectories])
             zero_groups += int(all(a == 0 for a in advantages))
             for trajectory, advantage in zip(trajectories, advantages):

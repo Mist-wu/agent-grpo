@@ -46,22 +46,31 @@ def collect(config_path, data_path, out_path, seed=42, target=500, attempts_per_
     meta_path.parent.mkdir(parents=True, exist_ok=True)
     meta_path.write_text(json.dumps(meta, indent=2) + "\n")
     accepted, attempted = len(accepted_ids), len(attempts)
-    for task in tasks:
-        if accepted >= target:
-            break
-        if task.id in accepted_ids:
-            continue
-        for _ in range(counts.get(task.id, 0), attempts_per_question):
-            trajectory = sample_trajectory(model, tokenizer, task, max_new_tokens=config["max_new_tokens"],
-                          max_sequence_length=config["max_sequence_length"], enable_python=config.get("python_tool", False))
-            attempted += 1
-            success = trajectory.reward["correctness"] == 1 and not trajectory.truncated
-            if success:
-                append_jsonl(out, {**asdict(trajectory), "source_split": "train", "seed": seed})
-                accepted += 1
-            append_jsonl(attempts_path, {"task_id": task.id, "accepted": success, "reward": trajectory.reward})
-            if success:
+    pending = [task for task in tasks if task.id not in accepted_ids and counts.get(task.id, 0) < attempts_per_question]
+    cursor = 0
+    batch_size = config.get("rollout_batch_size", 8)
+    meta["rollout_batch_size"] = batch_size
+    while accepted < target and cursor < len(pending):
+        batch = pending[cursor:cursor + min(batch_size, target - accepted)]
+        cursor += len(batch)
+        for _ in range(attempts_per_question):
+            active = [task for task in batch if task.id not in accepted_ids and counts.get(task.id, 0) < attempts_per_question]
+            if not active:
                 break
+            trajectories = batch_tool_trajectories(model, tokenizer, active, temperature=config["temperature"],
+                max_new_tokens=config["max_new_tokens"], max_sequence_length=config["max_sequence_length"],
+                enable_python=config.get("python_tool", False))
+            for task, trajectory in zip(active, trajectories):
+                attempted += 1
+                counts[task.id] = counts.get(task.id, 0) + 1
+                success = trajectory.reward["correctness"] == 1 and not trajectory.truncated
+                if success:
+                    append_jsonl(out, {**asdict(trajectory), "source_split": "train", "seed": seed})
+                    accepted_ids.add(task.id)
+                    accepted += 1
+                append_jsonl(attempts_path, {"task_id": task.id, "accepted": success, "reward": trajectory.reward})
+            print(json.dumps({"stage": "cold-collection", "seed": seed, "accepted": accepted,
+                              "target": target, "attempted": attempted}), flush=True)
     meta.update(accepted=accepted, attempted=attempted, reached_target=accepted >= target)
     meta_path.write_text(json.dumps(meta, indent=2) + "\n")
     if accepted < target:
