@@ -1,0 +1,1 @@
+{"step": 1, "seed": 42, "seconds": 151.2603762990002, "reward": 0.3750372023809524, "correctness": 0.3523809523809524, "tool_calls": 1.359375, "response_tokens": 130.25, "zero_advantage_group_fraction": 0.125, "truncated_fraction": 0.0, "loss": -0.0027314592559832818, "kl": 0.0268918111360108, "clip_fraction": 0.01851560345494363}

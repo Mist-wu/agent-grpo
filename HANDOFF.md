@@ -1,5 +1,21 @@
 # E3 live handoff
 
+## 2026-11-05 00:40 JST server observation
+
+The existing `E3-formal-independent-20261104-03` on `exp-e3-recovery-a100` completed seed 42 cold SFT: downloaded `run.json` and all 63 training-step records, and observed `adapter/` and checkpoints 0025, 0050, 0063 on `gdrive:exp/runs/E3/cold-42/`. The same run then completed **GRPO step 1/300**: reward 0.3750372, correctness 0.352381, KL 0.0268918, 151.26 seconds. These are single-step training metrics, not final evaluation. The existing output subscriber remains active; do not resubmit. Shared account usage was 140.14 CU, 17.34 CU/hour across four assignments, not E3-specific. E2's final adapter is still pending.
+
+Collected SFT records and the observed first GRPO record in `results/collected/seed42/` using:
+
+```sh
+root=/content/experiment-runs/E3-formal-independent-20261104-03/workspace
+out=/srv/exp-runner/state/remote/E3-formal-independent-20261104-03
+colab download -s exp-e3-recovery-a100 "$root/results/cold-42/train.jsonl" "$out/sft-42-train.jsonl"
+colab download -s exp-e3-recovery-a100 "$root/results/cold-42/run.json" "$out/sft-42-run.json"
+colab download -s exp-e3-recovery-a100 "$root/results/grpo-42/train.jsonl" "$out/grpo-42-train.jsonl"
+```
+
+Continue observing the running job and its checkpoint copies using the polling commands below.
+
 ## 2026-11-05 00:33 JST server observation
 
 Seed 42 cold collection **completed 500/500 accepted in 3,493 attempts**; the running `E3-formal-independent-20261104-03` reported its completed Drive copy at 00:31:14 JST and then started the SFT-stage process, which was loading the model at observation. SFT completion and GRPO have not yet been observed. The existing `exp-iopub-e3-recovery.service` remains active; do not resubmit. Shared account usage was 141.59 CU, 17.34 CU/hour across four assignments, not E3-specific. E2's final adapter remains pending.
