@@ -25,6 +25,7 @@ def main():
         if name == "collect":
             p.add_argument("--target", type=int, default=500)
             p.add_argument("--attempts-per-question", type=int, default=2)
+            p.add_argument("--batch-size", type=int, default=32)
         if name == "sft":
             p.add_argument("--epochs", type=int, default=1)
             p.add_argument("--resume")
@@ -51,7 +52,7 @@ def main():
         print(json.dumps(prepare(args.out, args.train_count, args.dev_count, args.test_count, args.seed), indent=2))
     elif args.command == "collect":
         from .stages import collect
-        collect(args.config, args.data, args.out, args.seed, args.target, args.attempts_per_question)
+        collect(args.config, args.data, args.out, args.seed, args.target, args.attempts_per_question, args.batch_size)
     elif args.command == "sft":
         from .stages import sft
         sft(args.config, args.data, args.out, args.seed, args.epochs, args.resume)

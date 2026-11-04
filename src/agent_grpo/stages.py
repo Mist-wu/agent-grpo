@@ -12,7 +12,7 @@ from .rollout import sample_trajectory, batch_direct_trajectories, batch_tool_tr
 from .tools import probe_python_sandbox
 
 
-def collect(config_path, data_path, out_path, seed=42, target=500, attempts_per_question=2):
+def collect(config_path, data_path, out_path, seed=42, target=500, attempts_per_question=2, batch_size=32):
     config = load_config(config_path)
     tasks = read_tasks(data_path)
     if not tasks or any(task.split != "train" for task in tasks):
@@ -36,20 +36,25 @@ def collect(config_path, data_path, out_path, seed=42, target=500, attempts_per_
     random.Random(seed).shuffle(tasks)
     model, tokenizer = model_and_tokenizer(config)
     meta = metadata(config, data_path, model)
-    meta.update(target=target, seed=seed, attempts_per_question=attempts_per_question)
+    meta.update(target=target, seed=seed, attempts_per_question=attempts_per_question, rollout_batch_size=batch_size)
+    executions_path = Path(str(out) + ".executions.jsonl")
     if meta_path.exists():
         previous = json.loads(meta_path.read_text())
         for key in ["config", "data_sha256", "model_revision_resolved", "seed", "target", "attempts_per_question"]:
             if previous[key] != meta[key]:
                 raise ValueError(f"collection resume mismatch: {key}")
         meta["resume_count"] = previous.get("resume_count", 0) + 1
+        if not executions_path.exists():
+            append_jsonl(executions_path, {"git_commit": previous["git_commit"], "created_at": previous["created_at"],
+                "batch_size": previous.get("rollout_batch_size", 32), "existing_rows": 0,
+                "preserved_rows_at_transition": len(accepted_rows), "attempts_at_transition": len(attempts)})
+    append_jsonl(executions_path, {"git_commit": meta["git_commit"], "created_at": meta["created_at"],
+        "batch_size": batch_size, "existing_rows": len(accepted_rows), "existing_attempts": len(attempts)})
     meta_path.parent.mkdir(parents=True, exist_ok=True)
     meta_path.write_text(json.dumps(meta, indent=2) + "\n")
     accepted, attempted = len(accepted_ids), len(attempts)
     pending = [task for task in tasks if task.id not in accepted_ids and counts.get(task.id, 0) < attempts_per_question]
     cursor = 0
-    batch_size = config.get("rollout_batch_size", 32)
-    meta["rollout_batch_size"] = batch_size
     while accepted < target and cursor < len(pending):
         batch = pending[cursor:cursor + min(batch_size, target - accepted)]
         cursor += len(batch)
@@ -65,17 +70,19 @@ def collect(config_path, data_path, out_path, seed=42, target=500, attempts_per_
                 counts[task.id] = counts.get(task.id, 0) + 1
                 success = trajectory.reward["correctness"] == 1 and not trajectory.truncated
                 if success:
-                    append_jsonl(out, {**asdict(trajectory), "source_split": "train", "seed": seed})
+                    append_jsonl(out, {**asdict(trajectory), "source_split": "train", "seed": seed,
+                                      "execution_commit": meta["git_commit"]})
                     accepted_ids.add(task.id)
                     accepted += 1
-                append_jsonl(attempts_path, {"task_id": task.id, "accepted": success, "reward": trajectory.reward})
+                append_jsonl(attempts_path, {"task_id": task.id, "accepted": success, "reward": trajectory.reward,
+                                           "execution_commit": meta["git_commit"]})
             print(json.dumps({"stage": "cold-collection", "seed": seed, "accepted": accepted,
                               "target": target, "attempted": attempted}), flush=True)
     meta.update(accepted=accepted, attempted=attempted, reached_target=accepted >= target)
     meta_path.write_text(json.dumps(meta, indent=2) + "\n")
     if accepted < target:
         raise RuntimeError(f"only {accepted}/{target} correct trajectories collected; inspect before changing protocol")
-    copy_outputs([out, meta_path, attempts_path], "data")
+    copy_outputs([out, meta_path, attempts_path, executions_path], "data")
 
 
 def sft(config_path, trajectories_path, out_dir, seed=42, epochs=1, resume=None):
