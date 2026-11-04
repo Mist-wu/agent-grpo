@@ -1,5 +1,9 @@
 # E3 live handoff
 
+## 2026-11-04 23:47 JST server observation
+
+Run `E3-formal-independent-20261104-03` on `exp-e3-recovery-a100` remains running (PID 1266); the actual seed 42 cold collection advanced to **184/500 accepted from 1,301 attempts** and reported a Drive copy at 23:47:32 JST. SFT and GRPO have not started. The existing `exp-iopub-e3-recovery.service` is active. At 23:47 shared account usage was 156.04 CU remaining, 17.34 CU/hour, four assignments, not E3-specific cost. E2's latest handoff reports seed42 step440/1288 at 23:41; its final adapter is not yet available. No job was resubmitted. The next download commands and receipt paths are immediately below.
+
 ## 2026-11-04 23:40 JST server observation
 
 The existing foreground run on `exp-e3-recovery-a100` is still reporting `running` (PID 1266, source `1e9b43d`); its actual output advanced seed 42 cold collection to **123/500 accepted, 828 attempts**, and recorded a Drive copy at 23:39:25 JST. SFT and GRPO have not yet started. `exp-iopub-e3-recovery.service` is active and subscribes to the existing job; do not replace the job or its output client. Shared account usage observed at 23:40: 157.48 CU remaining, 17.34 CU/hour, four active assignments; this is not E3-specific cost. Original downloaded status and log snapshots are `/srv/exp-runner/state/remote/E3-formal-independent-20261104-03/status-latest.json` and `output-latest.log`.
