@@ -2,17 +2,20 @@
 # Prioritize all three training seeds; finish every deferred final-test item afterward.
 set -euo pipefail
 config=${1:-configs/a100.json}
+start=${2:-core}
 mkdir -p results/core
 python - <<'PY'
 from pathlib import Path
 import json
-rows = [json.loads(line) for line in Path('data/test.jsonl').read_text().splitlines()]
+rows = [json.loads(line) for line in Path('data/test.jsonl').read_text().split("\n") if line.strip()]
 core = [row for row in rows if row['dataset'] in {'gsm8k', 'hotpotqa'}]
 Path('data/test-core.jsonl').write_text(''.join(json.dumps(row,ensure_ascii=False)+'\n' for row in core))
 print(json.dumps({'stage':'priority-core','core_rows':len(core),'full_rows':len(rows),
                   'deferred_rows':len(rows)-len(core),'selection':'all GSM8K and HotpotQA final-test rows'}),flush=True)
 PY
-python scripts/run.py evaluate --config "$config" --data data/test-core.jsonl --out results/core/eval-base-tools.jsonl --condition base-tools --batch-size "${E3_TOOL_BATCH_SIZE:-32}"
+if [ "$start" = core ]; then
+  python scripts/run.py evaluate --config "$config" --data data/test-core.jsonl --out results/core/eval-base-tools.jsonl --condition base-tools --batch-size "${E3_TOOL_BATCH_SIZE:-32}"
+fi
 for seed in 42 43 44; do
   python scripts/run.py collect --config "$config" --data data/train.jsonl --out "data/cold-${seed}.jsonl" --seed "$seed" --target 500
   python scripts/run.py sft --config "$config" --data "data/cold-${seed}.jsonl" --out "results/cold-${seed}" --seed "$seed"
@@ -31,7 +34,7 @@ from pathlib import Path
 import sys,json,hashlib,shutil
 source,output=map(Path,sys.argv[1:])
 data=Path('data/test.jsonl').read_bytes()
-rows=[json.loads(line) for line in data.decode().splitlines()]
+rows=[json.loads(line) for line in data.decode().split("\n") if line.strip()]
 meta=json.loads(Path(str(source)+'.metadata.json').read_text())
 original_meta=dict(meta)
 shutil.copyfile(source,output)
@@ -41,7 +44,7 @@ meta.update(data_sha256=hashlib.sha256(data).hexdigest(),tasks=len(rows),
 Path(str(output)+'.metadata.json').write_text(json.dumps(meta,indent=2)+'\n')
 shutil.copyfile(str(source)+'.executions.jsonl',str(output)+'.executions.jsonl')
 print(json.dumps({'stage':'expand-core-to-full-plan','input':str(source),'out':str(output),
-                  'full_tasks':len(rows),'existing_rows':len(source.read_text().splitlines()),'complete':False}),flush=True)
+                  'full_tasks':len(rows),'existing_rows':sum(bool(line.strip()) for line in source.read_text().split("\n")),'complete':False}),flush=True)
 PY
   fi
 }

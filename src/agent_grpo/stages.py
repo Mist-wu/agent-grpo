@@ -22,13 +22,13 @@ def collect(config_path, data_path, out_path, seed=42, target=500, attempts_per_
     out = Path(out_path)
     meta_path = Path(str(out) + ".metadata.json")
     attempts_path = Path(str(out) + ".attempts.jsonl")
-    accepted_rows = [json.loads(line) for line in out.read_text().splitlines() if line.strip()] if out.exists() else []
+    accepted_rows = [json.loads(line) for line in out.read_text().split("\n") if line.strip()] if out.exists() else []
     accepted_ids = {row["task_id"] for row in accepted_rows}
     if len(accepted_ids) != len(accepted_rows):
         raise ValueError("duplicate accepted collection rows")
     if out.exists() and not meta_path.exists():
         raise ValueError("collection has no provenance; inspect it before resuming")
-    attempts = [json.loads(line) for line in attempts_path.read_text().splitlines() if line.strip()] if attempts_path.exists() else []
+    attempts = [json.loads(line) for line in attempts_path.read_text().split("\n") if line.strip()] if attempts_path.exists() else []
     counts = {}
     for row in attempts:
         counts[row["task_id"]] = counts.get(row["task_id"], 0) + 1
@@ -82,7 +82,7 @@ def sft(config_path, trajectories_path, out_dir, seed=42, epochs=1, resume=None)
     import torch
     config = load_config(config_path)
     seed_all(seed)
-    records = [json.loads(line) for line in Path(trajectories_path).read_text().splitlines() if line.strip()]
+    records = [json.loads(line) for line in Path(trajectories_path).read_text().split("\n") if line.strip()]
     if not records or any(row.get("source_split") != "train" or row["reward"]["correctness"] != 1 for row in records):
         raise ValueError("SFT accepts only verified correct training trajectories")
     out = Path(out_dir)
@@ -165,7 +165,7 @@ def evaluate(config_path, data_path, out_path, condition, seed=42, adapter=None,
     out = Path(out_path)
     done = {}
     if out.exists():
-        done = {row["task_id"]: row for row in map(json.loads, out.read_text().splitlines())}
+        done = {row["task_id"]: row for row in (json.loads(line) for line in out.read_text().split("\n") if line.strip())}
     model, tokenizer = model_and_tokenizer(config, adapter)
     meta = metadata(config, data_path, model)
     meta.update(condition=condition, seed=seed, adapter=adapter, split=tasks[0].split, tasks=len(tasks))

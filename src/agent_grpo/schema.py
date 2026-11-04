@@ -39,7 +39,7 @@ class Trajectory:
 
 
 def read_tasks(path):
-    tasks = [Task(**json.loads(line)) for line in Path(path).read_text().splitlines() if line.strip()]
+    tasks = [Task(**json.loads(line)) for line in Path(path).read_text().split("\n") if line.strip()]
     ids = [task.id for task in tasks]
     if len(set(ids)) != len(ids):
         raise ValueError("duplicate task IDs")

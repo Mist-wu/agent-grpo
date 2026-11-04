@@ -19,7 +19,7 @@ def rescore_saved(data_path, input_path, output_path):
     if source.resolve() == output.resolve():
         raise ValueError("use a separate output path to retain original generation records")
     original_bytes = source.read_bytes()
-    rows = [json.loads(line) for line in original_bytes.decode().splitlines() if line.strip()]
+    rows = [json.loads(line) for line in original_bytes.decode().split("\n") if line.strip()]
     meta = json.loads(Path(str(source) + ".metadata.json").read_text())
     if hashlib.sha256(Path(data_path).read_bytes()).hexdigest() != meta["data_sha256"]:
         raise ValueError("rescoring requires the original evaluation dataset")
@@ -57,7 +57,7 @@ def summarize(paths, output):
     for path in paths:
         path = Path(path)
         meta = json.loads(Path(str(path) + ".metadata.json").read_text())
-        rows = [json.loads(line) for line in path.read_text().splitlines() if line.strip()]
+        rows = [json.loads(line) for line in path.read_text().split("\n") if line.strip()]
         if not rows or meta["split"] != "test" or len(rows) != meta["tasks"]:
             raise ValueError(f"not a complete formal final-test evaluation: {path}")
         if any(row["reward"].get("score_version") != SCORE_VERSION for row in rows):

@@ -38,7 +38,7 @@ def verify(root=ROOT):
         require(source['split'] == 'test', 'development result')
         require(source['git_commit'] not in {'unknown', ''} and bool(source['model_revision_resolved']), 'commit/model provenance missing')
         require(source['gpu'] != 'none', 'formal result must come from GPU run')
-        rows = [json.loads(line) for line in result_file.read_text().splitlines() if line.strip()]
+        rows = [json.loads(line) for line in result_file.read_text().split("\n") if line.strip()]
         require(len(rows) == source['tasks'] and len({r['task_id'] for r in rows}) == len(rows), 'raw result coverage mismatch')
         by_dataset = {}
         for row in rows:
@@ -56,7 +56,7 @@ def verify(root=ROOT):
         run_dir = root / 'results' / f'grpo-{seed}'
         run = json.loads((run_dir / 'run.json').read_text())
         require(run['config']['steps'] >= 300, 'formal training incomplete')
-        logs = [json.loads(line) for line in (run_dir / 'train.jsonl').read_text().splitlines()]
+        logs = [json.loads(line) for line in (run_dir / 'train.jsonl').read_text().split("\n") if line.strip()]
         require(max(r['step'] for r in logs) >= run['config']['steps'], 'final GRPO step not recorded')
         require((run_dir / f"checkpoint-{run['config']['steps']:04d}" / 'adapter_config.json').exists(), 'final adapter missing')
     for filename in ['README.md', 'docs/baselines.md', 'docs/cost.md', 'docs/trajectory-analysis.md']:
