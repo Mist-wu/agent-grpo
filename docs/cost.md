@@ -118,6 +118,8 @@ Active attempt `E3-formal-independent-20261104-03` uses A100 session `exp-e3-rec
 
 2026-11-05 08:25 JST: original A100 seed42 GRPO183/300. Shared balance13.20CU,15.40CU/hour across3 assignments; not E3-attributed charges. Existing job/subscriber preserved; no resubmission or purchase/recharge.
 
+2026-11-05 08:33 JST: original A100 seed42 GRPO187/300. Shared balance10.63CU,15.40CU/hour across3 assignments; not E3-attributed charges. Existing job/subscriber preserved; no resubmission or purchase/recharge.
+
 ## Historical observations
 
 | Run | Session | Requested / allocated GPU | Job start | Latest stage | Observed CU cost |
