@@ -86,6 +86,8 @@ Active attempt `E3-formal-independent-20261104-03` uses A100 session `exp-e3-rec
 
 2026-11-05 06:40 JST: A100 seed42 GRPO reached144/300; independent L4 E2-adapter evaluation reached2304/6000, still running. Shared account balance40.61CU, rate17.34CU/hour, four assignments; not E3-attributed costs. Actual L4 environment/GPU and evaluation metadata collected in results/collected/e2-comparison/.
 
+2026-11-05 06:47 JST: A100 seed42 GRPO147/300; independent L4 E2-adapter inference4880/6000, still running. Shared usage37.71CU,17.34CU/hour across four assignments; not E3-attributed charges. Both actual jobs/clients preserved.
+
 ## Historical observations
 
 | Run | Session | Requested / allocated GPU | Job start | Latest stage | Observed CU cost |

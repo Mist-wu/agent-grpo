@@ -1,5 +1,9 @@
 # E3 live handoff
 
+## 2026-11-05 06:47 JST: E2 full-test inference 4880/6000; GRPO147
+
+Existing E2 comparison `E3-e2-comparison-20261105-01` remains running; actual downloaded output reaches **4,880/6,000** evaluation rows. Host real foreground client PIDs91277/91283 remain present, unchanged; no final scores/completion claimed. Original A100 run reached **147/300 seed42 GRPO steps**, with actual records collected at `results/collected/seed42/grpo-42-train-steps1-147.jsonl`. Existing output subscriber remains active; neither job was resubmitted. Used the same common E2 poll and both output/training download commands below. Shared usage **37.71 CU**, **17.34 CU/hour**, four assignments; not E3-attributed cost. Next: poll both existing jobs, collect E2 raw/scored/summary outputs once complete, then release or immediately reuse its L4 for unfinished independent E3 work (never duplicate the original A100 pipeline). Collect checkpoint150/dev once produced. Full trained evaluations and seeds43/44 remain unfinished.
+
 ## 2026-11-05 06:40 JST: E2 inference progressing; original GRPO preserved
 
 Polled `E3-e2-comparison-20261105-01` using the common poll command below: running, with actual output reaching **2,304/6,000** E2-adapter evaluation rows. No final scores or complete evaluation are claimed. Foreground host client PIDs91277/91283 remain present; do not add another subscriber or resubmit. Downloaded actual `workspace/results/eval-e2-lora-42.jsonl.metadata.json` and `workspace/results/e2-comparison/{env,gpu}.txt` from `exp-e3-e2-eval` into its original receipt directory and copied them to `results/collected/e2-comparison/`. Metadata records NVIDIA L4, BF16, pinned model revision, test hash `e479e0c5eb649a1a987908fe876f0f1688a28f1271e7e34c06cde3ce01b1833d` and 6,000 planned tasks; it is provenance, not completion evidence. Actual greedy evaluation uses temperature0, although shared training config contains temperature1.
