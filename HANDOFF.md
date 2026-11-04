@@ -1,5 +1,18 @@
 # E3 live handoff
 
+## 2026-11-05 00:33 JST server observation
+
+Seed 42 cold collection **completed 500/500 accepted in 3,493 attempts**; the running `E3-formal-independent-20261104-03` reported its completed Drive copy at 00:31:14 JST and then started the SFT-stage process, which was loading the model at observation. SFT completion and GRPO have not yet been observed. The existing `exp-iopub-e3-recovery.service` remains active; do not resubmit. Shared account usage was 141.59 CU, 17.34 CU/hour across four assignments, not E3-specific. E2's final adapter remains pending.
+
+Collected the real cold-start artifacts from `gdrive:exp/runs/E3/data` into `results/collected/cold-42/`; the accepted and attempts files contain 500 and 3,493 lines respectively. Archived them as `results/collected/cold-42-complete.tgz` for the repository using:
+
+```sh
+rclone copy gdrive:exp/runs/E3/data results/collected/cold-42 --include 'cold-42*'
+tar -czf results/collected/cold-42-complete.tgz -C results/collected/cold-42 .
+```
+
+Continue polling status and output as below, watching for actual SFT checkpoint and GRPO progress.
+
 ## 2026-11-05 00:26 JST server observation
 
 The existing `E3-formal-independent-20261104-03` on `exp-e3-recovery-a100` remains in seed 42 cold collection. Output reached **487/500 accepted from 3,414 attempts**; the latest completed Drive copy in that log covers **482 accepted / 3,381 attempts** at 00:25:04 JST. SFT and GRPO have not started; the running script should advance after collection. The existing output subscriber is active; do not resubmit. Shared account usage was 144.43 CU, 17.34 CU/hour across four assignments, not E3-specific. E2's final adapter is still pending. Poll using the commands below.
