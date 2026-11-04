@@ -1,5 +1,9 @@
 # E3 live handoff
 
+## 2026-11-05 03:01 JST: GRPO progress
+
+Existing run `E3-formal-independent-20261104-03` on `exp-e3-recovery-a100` produced seed42 GRPO **55/300 steps**. Downloaded actual records using the documented training-record command and copied them to `results/collected/seed42/grpo-42-train-steps1-55.jsonl`. Step50 checkpoint and both dev results were already collected; no final test result is claimed. Existing output subscriber remains active; no command was resubmitted. E2 comparison still awaits GPU capacity. Shared usage: 102.51 CU remaining, 17.34 CU/hour across four assignments, not E3-only cost. Continue polling status/output and training records using the commands below; collect the next checkpoint/dev outputs when produced.
+
 ## 2026-11-05 02:54 JST: step50 dev complete, training resumed
 
 Existing run `E3-formal-independent-20261104-03` on `exp-e3-recovery-a100` completed its step50 dev evaluation and reached **51/300 training steps**. Actual dev records: **GSM8K correctness 0.74 (n=50)** and **HotpotQA mean answer F1 0.40740953332045593 (n=50)**, collected at `results/collected/seed42/grpo-42-dev-step50.jsonl`. Actual training records through step51 are at `results/collected/seed42/grpo-42-train-steps1-51.jsonl`. Downloaded using the existing `workspace/results/grpo-42/{dev,train}.jsonl` commands into the original receipt directory, then copied into the repository. These are intermediate dev measurements, not full test results or demonstrated SFT improvement. Checkpoint-0050 is already saved on Drive. Existing output subscriber remains active, and no job or evaluation was resubmitted. E2 comparison still awaits capacity. Shared account usage: 103.95 CU remaining, 17.34 CU/hour across four assignments, not E3-only cost. Continue status/output and training polling using the commands below.
