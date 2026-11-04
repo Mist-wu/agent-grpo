@@ -98,6 +98,8 @@ Active attempt `E3-formal-independent-20261104-03` uses A100 session `exp-e3-rec
 
 2026-11-05 07:21 JST: original A100 completed step150 dev (GSM8K0.76/n50, HotpotQA F1 0.5036031746031746/n50), resumed training to152/300. Shared balance29.87CU,15.40CU/hour across3 assignments; not E3-attributed charges. Existing job/subscriber preserved; no resubmission.
 
+2026-11-05 07:27 JST: original A100 seed42 GRPO155/300. Shared balance28.59CU,15.40CU/hour across3 assignments; not E3-attributed charges. Existing job/subscriber preserved; no resubmission.
+
 ## Historical observations
 
 | Run | Session | Requested / allocated GPU | Job start | Latest stage | Observed CU cost |
