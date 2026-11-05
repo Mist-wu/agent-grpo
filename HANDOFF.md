@@ -1,5 +1,11 @@
 # E3 live handoff
 
+## 2026-11-05 09:28 JST: actual existing-run progress at zero balance
+
+Observation-only downloads show the existing original A100 foreground job resumed after step200 dev and reached **203/300 seed42 GRPO steps**; collected actual records at `results/collected/seed42/grpo-42-train-steps1-203.jsonl`. No new command, allocation, restart, purchase or recharge was submitted. Existing output subscriber remains active. Shared account still reports **0.00 CU**,15.40CU/hour across3 assignments; this is an account observation, not E3-attributed cost or evidence of free compute. Do not claim the job is paused: real progress is observed despite the reported balance.
+
+Latest durable recovery checkpoint remains **0200** on Drive (not203); metadata/receipt and complete step200 dev already collected. E2 control remains complete/collected. Continue observation/collection of this already-running job only while waiting at zero; do not launch additional compute. Remaining97 training steps, seeds43/44, full trained comparisons and final trajectory analysis unfinished. Use original status/output/train commands below and `colab usage`; preserve existing job/client, never duplicate it.
+
 ## 2026-11-05 09:21 JST: step200 dev complete/collected; shared balance zero
 
 Actual step200 dev results are **GSM8K correctness0.68 (n50)** and **HotpotQA mean answer F1 0.5188527443105756 (n50)**. Downloaded the existing dev.jsonl and copied it to `results/collected/seed42/grpo-42-dev-through-step200.jsonl`; also saved this observation to Drive with `rclone copyto results/collected/seed42/grpo-42-dev-through-step200.jsonl gdrive:exp/runs/E3/observations/seed42/grpo-42-dev-through-step200.jsonl` (exit0). Preserve the GSM8K decline from step1500.76; these intermediate aggregate dev scores are not paired significance, SFT improvement or final-test results. Downloaded train file still has200 steps, no step201 observed.
