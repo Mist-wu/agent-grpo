@@ -1,5 +1,11 @@
 # E3 live handoff
 
+## 2026-11-05 08:59 JST: checkpoint200 saved; low shared balance
+
+Original A100 run reached **200/300 seed42 GRPO steps**; `rclone lsf gdrive:exp/runs/E3/grpo-42/checkpoint-0200/` shows adapter/tokenizer files and `training-state.pt`. Collected actual metadata with `rclone copyto gdrive:exp/runs/E3/grpo-42/checkpoint-0200/metadata.json /srv/exp-runner/state/remote/E3-formal-independent-20261104-03/grpo-42-checkpoint-0200-metadata.json`, then copied metadata, file-list receipt and200 training records into `results/collected/seed42/`. Weights/state are saved on Drive, observed but not collected locally. Downloaded dev.jsonl still has only steps50/100/150; **no step200 dev result claimed**. Preserve existing foreground job and active output subscriber; no resubmission.
+
+Shared balance **4.22 CU**, rate **15.40 CU/hour**, three assignments, not E3-attributed charges. No purchase/recharge. Continue polling original status/output/dev below; if balance reaches zero, retain checkpoint200/actual records and wait per operations policy. E2 control remains complete/collected, its L4 released. Remaining100 steps of seed42, seeds43/44, full trained comparisons and final trajectory analysis remain unfinished. Checkpoint200 is the latest actual recovery checkpoint, not completed training.
+
 ## 2026-11-05 08:45 JST: GRPO progress
 
 Original A100 run `E3-formal-independent-20261104-03` on `exp-e3-recovery-a100` reached **193/300 seed42 GRPO steps**. Downloaded actual records using existing status/output/train commands and copied to `results/collected/seed42/grpo-42-train-steps1-193.jsonl`. Existing foreground job/output subscriber preserved; no resubmission. Checkpoint150 and complete intermediate dev scores already collected; E2 full-test control complete/collected and L4 released. Shared usage **8.07 CU**, **15.40 CU/hour**, three assignments, not E3-attributed charges. Continue original polling below; collect checkpoint200/dev when produced. Remaining seeds, full trained comparisons and final trajectory analysis unfinished. No purchase/recharge; retain saved progress and wait if balance reaches zero.

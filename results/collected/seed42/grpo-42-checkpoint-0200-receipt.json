@@ -1,0 +1,14 @@
+{
+  "experiment": "E3",
+  "session": "exp-e3-recovery-a100",
+  "run_id": "E3-formal-independent-20261104-03",
+  "observed_at": "2026-11-05T08:59:00+09:00",
+  "step": 200,
+  "remote": "gdrive:exp/runs/E3/grpo-42/checkpoint-0200",
+  "observation_command": "rclone lsf gdrive:exp/runs/E3/grpo-42/checkpoint-0200/",
+  "observed_files": ["README.md", "adapter_config.json", "adapter_model.safetensors", "added_tokens.json", "merges.txt", "metadata.json", "special_tokens_map.json", "tokenizer.json", "tokenizer_config.json", "training-state.pt", "vocab.json"],
+  "collected_locally": ["grpo-42-checkpoint-0200-metadata.json"],
+  "weights_and_training_state_collected_locally": false,
+  "step200_dev_results_observed": false,
+  "training_complete": false
+}
