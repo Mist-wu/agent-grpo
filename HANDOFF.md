@@ -1,5 +1,9 @@
 # E3 live handoff
 
+## 2026-11-05 09:12 JST: step200 dev still pending; balance observation
+
+Downloaded original status/output/dev via the existing commands. Output still ends at **200/300** and dev has only steps50/100/150: **no new step200 dev measurement**. Existing foreground job/output subscriber preserved; no resubmission. Checkpoint200 adapter/state is already saved on Drive; metadata/receipt,200 training records and descriptive summary collected locally. Shared balance **1.64 CU**, rate **15.40 CU/hour**, three assignments, not E3-attributed charges. No purchase/recharge; retain actual saved progress and wait at zero per operations policy. E2 full-test control remains complete/collected and L4 released. Next: repeat original status/output/dev and usage observation, collect actual dev outputs if produced, never resubmit the active job. Remaining training/seeds/full comparisons/trajectory analysis unfinished.
+
 ## 2026-11-05 09:06 JST: first200 training summary; dev pending
 
 Polled original status/output/dev: output ends at200/300, dev still only steps50/100/150; no step200 dev result claimed. Existing foreground job/output subscriber preserved without resubmission. Generated small descriptive analysis using `python3 scripts/summarize_training.py results/collected/seed42/grpo-42-train-steps1-200.jsonl --block-size 50 > results/collected/seed42/grpo-42-training-summary-step200.json`. Fifty-step mean rewards **0.43798,0.55856,0.54935,0.56805**. Actual training-step seconds sum **26075.374232107984**, excluding checkpoint copies/dev evaluation, not total runtime/CU cost. Changing questions/trajectories and one partial seed do not establish held-out improvement or three-seed uncertainty.
