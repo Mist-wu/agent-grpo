@@ -1,5 +1,9 @@
 # E3 live handoff
 
+## 2026-11-05 09:44 JST: observed original GRPO211
+
+Observation-only downloads show original A100 seed42 GRPO reached **211/300**; actual records collected at `results/collected/seed42/grpo-42-train-steps1-211.jsonl`. Existing foreground job and active output subscriber preserved. No compute command/allocation/restart/purchase/recharge submitted. Shared balance still **0.00 CU**, reported15.40CU/hour across3 assignments; no inference of free compute or E3-attributed charges. Latest saved recovery checkpoint remains200, not211; complete step200 dev already collected. E2 control remains complete/collected. Continue observation/collection of existing status/output/train only under zero-balance wait policy; no additional compute submissions. Remaining89 training steps, seeds43/44, full trained comparisons and final trajectory analysis unfinished.
+
 ## 2026-11-05 09:35 JST: observed original GRPO206
 
 Observation-only downloads show original A100 seed42 GRPO reached **206/300**; actual records collected at `results/collected/seed42/grpo-42-train-steps1-206.jsonl`. Existing foreground job and active output subscriber preserved. No compute command/allocation/restart/purchase/recharge submitted. Shared balance still **0.00 CU**, reported15.40CU/hour across3 assignments; no inference of free compute or E3-attributed charges. Latest saved recovery checkpoint remains200, not206; complete step200 dev already collected. E2 control remains complete/collected. Continue observation/collection of existing status/output/train only under zero-balance wait policy; no additional compute submissions. Remaining94 training steps, seeds43/44, full trained comparisons and final trajectory analysis unfinished.

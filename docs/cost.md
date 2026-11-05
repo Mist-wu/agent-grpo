@@ -134,6 +134,8 @@ Active attempt `E3-formal-independent-20261104-03` uses A100 session `exp-e3-rec
 
 2026-11-05 09:35 JST: shared balance0.00CU, reported15.40CU/hour across3 assignments. Existing A100 seed42 run actually reached206/300; observed/collected only, no compute submission or purchase/recharge. Durable checkpoint remains200. No inference of free compute or E3-attributed costs; existing job/subscriber preserved.
 
+2026-11-05 09:44 JST: shared balance0.00CU, reported15.40CU/hour across3 assignments. Existing A100 seed42 run actually reached211/300; observed/collected only, no compute submission or purchase/recharge. Durable checkpoint remains200. No inference of free compute or E3-attributed costs; existing job/subscriber preserved.
+
 ## Historical observations
 
 | Run | Session | Requested / allocated GPU | Job start | Latest stage | Observed CU cost |
