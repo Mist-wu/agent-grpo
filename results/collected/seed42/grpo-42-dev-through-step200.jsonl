@@ -1,0 +1,8 @@
+{"step": 50, "dataset": "gsm8k", "split": "dev", "n": 50, "mean": 0.74}
+{"step": 50, "dataset": "hotpotqa", "split": "dev", "n": 50, "mean": 0.40740953332045593}
+{"step": 100, "dataset": "gsm8k", "split": "dev", "n": 50, "mean": 0.76}
+{"step": 100, "dataset": "hotpotqa", "split": "dev", "n": 50, "mean": 0.4676031746031746}
+{"step": 150, "dataset": "gsm8k", "split": "dev", "n": 50, "mean": 0.76}
+{"step": 150, "dataset": "hotpotqa", "split": "dev", "n": 50, "mean": 0.5036031746031746}
+{"step": 200, "dataset": "gsm8k", "split": "dev", "n": 50, "mean": 0.68}
+{"step": 200, "dataset": "hotpotqa", "split": "dev", "n": 50, "mean": 0.5188527443105756}

@@ -128,6 +128,8 @@ Active attempt `E3-formal-independent-20261104-03` uses A100 session `exp-e3-rec
 
 2026-11-05 09:12 JST: shared balance1.64CU, rate15.40CU/hour across3 assignments; not E3-attributed costs. Original run output still ends at200/300 and no step200 dev result observed. Checkpoint200 already saved on Drive; actual records collected. Existing job/subscriber preserved, no resubmission or purchase/recharge; wait at zero.
 
+2026-11-05 09:21 JST: **shared balance0.00CU**, reported rate15.40CU/hour across3 assignments; not E3-attributed charges. Step200 dev completed (GSM8K0.68/n50, HotpotQA F1 0.5188527443105756/n50), collected locally and copied as a Drive observation. Actual train file still200 steps. Checkpoint200 adapter/state already saved on Drive. No purchase/recharge/allocation/resubmission; waiting at zero while preserving existing job/output client (no worker pause/termination claimed).
+
 ## Historical observations
 
 | Run | Session | Requested / allocated GPU | Job start | Latest stage | Observed CU cost |
