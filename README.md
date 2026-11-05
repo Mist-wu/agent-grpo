@@ -1,6 +1,6 @@
 # Multi-turn tool GRPO
 
-Hand-written Qwen2.5 LoRA experiment: compare base models, E2 toolcall LoRA, a separate cold-start SFT, and SFT+GRPO on calculator/search tasks. Formal training and results are pending. No claimed accuracy improvements are present.
+Hand-written Qwen2.5 LoRA experiment: compare base models, E2 toolcall LoRA, a separate cold-start SFT, and SFT+GRPO on calculator/search tasks. Core baselines and the 6,000-item E2 control are collected; seed-42 SFT is complete, and GRPO can recover from checkpoint 200 of 300. Seeds 43/44 and final trained comparisons remain unfinished. No claimed training improvement is present. See the [current recovery inputs and measured time basis](docs/mac-resume.md).
 
 ## Formal execution
 

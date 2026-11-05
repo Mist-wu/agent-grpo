@@ -1,5 +1,11 @@
 # E3 live handoff
 
+## 2026-11-05 Mac continuation: recovery history prepared
+
+Mac now owns continuation; server dispatch remains inactive. `scripts/prepare_seed42_recovery.py` has generated exactly 200 canonical training rows, eight dev rows through 200, and a separate 14-row archive for observed model steps 201–214 lost with the runtime. Their union equals the original collected metrics. `results/recovery-seed42/manifest.json` records hashes, recovery identity and measured timing. `scripts/resume_seed42.sh` restores the original data/cold adapter/checkpoint200 and uses those canonical logs in a fresh pinned runtime; shell syntax was checked, but no GPU command was executed. This avoids duplicate 201–214 metrics because the original training implementation appends after loading checkpoint200. Lost original rollout trajectories remain explicitly unavailable. See [recovery notes](docs/mac-resume.md).
+
+Based on the four actual 50-step block means, the remaining 100 seed42 steps require approximately 3.44–3.75 comparable A100 compute hours; all remaining GRPO steps (100+300+300) require 24.09–26.23 GPU hours. These exclude cold/SFT/dev/copies/final evaluations and are not completion deadlines. The actual zero-CU/no-session resource blocker remains; no allocation or recharge was attempted.
+
 ## 2026-11-05 10:00 JST: runtime lost; zero-unit recovery blocker
 
 **`exp-e3-recovery-a100` is no longer available**: existing status download returned `Session 'exp-e3-recovery-a100' not found`. Subsequent output/train downloads were not executed; local `status-latest.json`/logs are historical, not current running evidence. Output subscriber is inactive. `colab usage` now reports **0.00 CU,0.00 CU/hour,0 assignments**. Cause remains unknown; temporal association with zero balance is not a confirmed diagnosis. No runtime/client was stopped or replaced by this turn; no new allocation, compute submission, purchase or recharge.
