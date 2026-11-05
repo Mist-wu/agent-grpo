@@ -1,0 +1,17 @@
+{
+  "experiment": "E3",
+  "observed_at": "2026-11-05T10:00:11+09:00",
+  "session": "exp-e3-recovery-a100",
+  "run_id": "E3-formal-independent-20261104-03",
+  "original_receipt_directory": "/srv/exp-runner/state/remote/E3-formal-independent-20261104-03",
+  "download_observation": "colab download status.json returned Session 'exp-e3-recovery-a100' not found; subsequent output/train downloads were not run",
+  "output_subscriber_state": "inactive",
+  "shared_account": {"remaining_compute_units": 0.0, "reported_compute_units_per_hour": 0.0, "active_assignments": 0, "e3_attributed_cost": null},
+  "last_successful_observation": {"observed_at": "2026-11-05T09:51:05+09:00", "training_step": 214, "training_records": "grpo-42-train-steps1-214.jsonl"},
+  "latest_durable_checkpoint": {"step": 200, "path": "gdrive:exp/runs/E3/grpo-42/checkpoint-0200", "adapter_and_training_state_observed": true, "weights_and_state_collected_locally": false},
+  "drive_listing_after_loss": "grpo-42-drive-files-after-loss.txt",
+  "unsaved_progress": "Steps201-214 were observed and their metric records retained, but no model/optimizer checkpoint beyond200 was found. Any later unobserved work is unknown. Full GRPO rollout trajectories from the lost runtime were not collected.",
+  "cause": "unknown; zero balance and no assignments were observed, not a confirmed causal diagnosis",
+  "action": "No allocation, resubmission, purchase or recharge. Wait for available units/capacity; resume stopped training from actual checkpoint200, retaining lost-segment metrics separately.",
+  "experiment_complete": false
+}

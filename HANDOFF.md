@@ -1,5 +1,17 @@
 # E3 live handoff
 
+## 2026-11-05 10:00 JST: runtime lost; zero-unit recovery blocker
+
+**`exp-e3-recovery-a100` is no longer available**: existing status download returned `Session 'exp-e3-recovery-a100' not found`. Subsequent output/train downloads were not executed; local `status-latest.json`/logs are historical, not current running evidence. Output subscriber is inactive. `colab usage` now reports **0.00 CU,0.00 CU/hour,0 assignments**. Cause remains unknown; temporal association with zero balance is not a confirmed diagnosis. No runtime/client was stopped or replaced by this turn; no new allocation, compute submission, purchase or recharge.
+
+Re-listed actual Drive files using `rclone lsf gdrive:exp/runs/E3/grpo-42/ --max-depth 2`; latest saved checkpoint is **0200** with adapter/state, no later checkpoint found. Collected listing and factual loss receipt: `results/collected/seed42/grpo-42-drive-files-after-loss.txt` and `runtime-loss-20261105-1000.json`. Original receipt directory `/srv/exp-runner/state/remote/E3-formal-independent-20261104-03` retains actual last successful logs/status (`status-last-before-loss.json` is explicitly historical). Last real observation was **214/300 at09:51**, and its metrics are collected, but model/optimizer progress beyond200 is not recoverable from metrics. Full GRPO rollout trajectories from the lost runtime were not collected; do not claim otherwise. Cold/SFT and E2-control artifacts remain durable/collected.
+
+**Blocked on available Colab units/capacity.** Do not poll the missing session or launch a replacement at zero. Next `colab usage`; when capacity/units permit, allocate/stage a replacement and restore unchanged dataset, actual cold42 adapter and checkpoint200 directly from Drive. Preserve metrics201–214 as the lost segment; restore only training rows1–200 and dev through200 to the resumed canonical directory, avoiding duplicate step records. Resume just the stopped stage (not cold/SFT/E2/dev200) under a fresh foreground/client receipt:
+```sh
+python scripts/run.py train --config configs/a100.json --data data/train.jsonl --dev data/dev.jsonl --out results/grpo-42 --seed 42 --adapter results/cold-42/adapter --resume results/grpo-42/checkpoint-0200
+```
+This is a necessary recovery from model state200, not a new seed or a rerun of valid completed experiments. Use pinned runtime source `1e9b43d`/same configuration and record the recovery segment. After completion continue the remaining comparisons/seeds; do not rerun the completed E2 control. Formal E3 remains incomplete:100 steps from recovery state200, seeds43/44, full trained evaluations, uncertainty and trajectory/reward-hacking analysis.
+
 ## 2026-11-05 09:51 JST: observed original GRPO214
 
 Observation-only downloads show original A100 seed42 GRPO reached **214/300**; actual records collected at `results/collected/seed42/grpo-42-train-steps1-214.jsonl`. Existing foreground job and active output subscriber preserved. No compute command/allocation/restart/purchase/recharge submitted. Shared balance still **0.00 CU**, reported15.40CU/hour across3 assignments; no inference of free compute or E3-attributed charges. Latest saved recovery checkpoint remains200, not214; complete step200 dev already collected. E2 control remains complete/collected. Continue observation/collection of existing status/output/train only under zero-balance wait policy; no additional compute submissions. Remaining86 training steps, seeds43/44, full trained comparisons and final trajectory analysis unfinished.

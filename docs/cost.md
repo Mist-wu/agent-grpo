@@ -138,6 +138,8 @@ Active attempt `E3-formal-independent-20261104-03` uses A100 session `exp-e3-rec
 
 2026-11-05 09:51 JST: shared balance0.00CU, reported15.40CU/hour across3 assignments. Existing A100 seed42 run actually reached214/300; observed/collected only, no compute submission or purchase/recharge. Durable checkpoint remains200. No inference of free compute or E3-attributed costs; existing job/subscriber preserved.
 
+2026-11-05 10:00 JST: shared account0.00CU,0.00CU/hour,0 assignments. Original E3 session not found and output subscriber inactive; runtime-loss cause unconfirmed. Latest durable checkpoint200 confirmed by actual Drive listing, last collected metrics214. No new allocation/submission/purchase/recharge; blocked awaiting units/capacity. These remain shared-account observations, not E3-attributed costs.
+
 ## Historical observations
 
 | Run | Session | Requested / allocated GPU | Job start | Latest stage | Observed CU cost |
