@@ -1,5 +1,11 @@
 # E3 live handoff
 
+## 2026-11-05 09:06 JST: first200 training summary; dev pending
+
+Polled original status/output/dev: output ends at200/300, dev still only steps50/100/150; no step200 dev result claimed. Existing foreground job/output subscriber preserved without resubmission. Generated small descriptive analysis using `python3 scripts/summarize_training.py results/collected/seed42/grpo-42-train-steps1-200.jsonl --block-size 50 > results/collected/seed42/grpo-42-training-summary-step200.json`. Fifty-step mean rewards **0.43798,0.55856,0.54935,0.56805**. Actual training-step seconds sum **26075.374232107984**, excluding checkpoint copies/dev evaluation, not total runtime/CU cost. Changing questions/trajectories and one partial seed do not establish held-out improvement or three-seed uncertainty.
+
+Shared balance **2.93 CU**, **15.40 CU/hour**, three assignments, not E3-attributed charges. Checkpoint200 adapter/state already saved on Drive; actual metadata/receipt/training records collected locally. No purchase/recharge; retain saved progress and wait if balance reaches zero. E2 control complete/collected and L4 released. Next: repeat original status/output/dev downloads below; collect step200 dev when produced, do not duplicate evaluation. Full training/evaluations/trajectory analysis remain unfinished.
+
 ## 2026-11-05 08:59 JST: checkpoint200 saved; low shared balance
 
 Original A100 run reached **200/300 seed42 GRPO steps**; `rclone lsf gdrive:exp/runs/E3/grpo-42/checkpoint-0200/` shows adapter/tokenizer files and `training-state.pt`. Collected actual metadata with `rclone copyto gdrive:exp/runs/E3/grpo-42/checkpoint-0200/metadata.json /srv/exp-runner/state/remote/E3-formal-independent-20261104-03/grpo-42-checkpoint-0200-metadata.json`, then copied metadata, file-list receipt and200 training records into `results/collected/seed42/`. Weights/state are saved on Drive, observed but not collected locally. Downloaded dev.jsonl still has only steps50/100/150; **no step200 dev result claimed**. Preserve existing foreground job and active output subscriber; no resubmission.

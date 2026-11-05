@@ -124,6 +124,8 @@ Active attempt `E3-formal-independent-20261104-03` uses A100 session `exp-e3-rec
 
 2026-11-05 08:59 JST: A100 seed42 GRPO200/300; actual checkpoint200 adapter/state files observed on Drive and metadata/receipt/training records collected. No step200 dev result yet. Shared balance4.22CU, rate15.40CU/hour across3 assignments; not E3-attributed charges. Existing foreground job/subscriber preserved, no resubmission or purchase/recharge; retain checkpoint200/records and wait if balance reaches zero.
 
+2026-11-05 09:06 JST: original run remains at recorded step200, no new dev result. Actual first200 training-step seconds sum26075.374232107984 excludes checkpoint copies/dev evaluation; not total runtime/CU cost. Shared balance2.93CU,15.40CU/hour across3 assignments; not E3-attributed charges. Checkpoint200 already saved on Drive; existing run/subscriber preserved, no resubmission or purchase/recharge.
+
 ## Historical observations
 
 | Run | Session | Requested / allocated GPU | Job start | Latest stage | Observed CU cost |
