@@ -1,9 +1,11 @@
-# Trajectory analysis
+# 轨迹分析
 
-PENDING: after formal runs, inspect ten before/after pairs from held-out data. Separate wrong arithmetic, retrieval failures, malformed/extra calls, context truncation and reward exploitation. Report concrete observed reward-hacking examples only; if none are observed, say none observed and state the inspected scope. Do not invent an example to satisfy the initial brief.
+## 训练前
 
-## Observed before training
+原模型带工具的前 128 条轨迹里，有 35 条用满了 4 次调用，这 35 条都没有答对。例如 `gsm8k:test:588`，模型对一道没有候选文档的数学题反复检索同一个问题。
 
-Automated inspection of the first 128 actual core base-tools rows found 35 trajectories reaching the four-tool-call limit. None of those 35 received a correctness reward. For example, `gsm8k:test:588` repeatedly searched the empty question-local document collection for “Jared typing speed increase”; `gsm8k:test:906` similarly repeated “Tim shoe boxes”. Both received four empty search results, then attempted a fifth call and stopped with total reward -0.1. These are observed baseline tool-selection failures, not invented reward-hacking successes.
+逐条记录在 `results/diagnostics/initial-tool-baseline.json`，包含源文件的 SHA256 和每一轮的完整输入输出。
 
-The stored diagnostic is `results/diagnostics/initial-tool-baseline.json`, with the source-file SHA256 and full observed turns. This is model-assisted inspection of saved traces, not human annotation. No after-training comparison exists yet, so the ten before/after pairs remain PENDING.
+## 训练后
+
+GRPO 训练完成后，从留出数据里取 10 组训练前后的轨迹对比，按计算错误、检索失败、格式错误或多余调用、上下文截断和奖励漏洞分类。

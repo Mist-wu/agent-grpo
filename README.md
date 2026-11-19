@@ -1,65 +1,78 @@
-# Multi-turn tool GRPO
+# agent-grpo：手写多轮工具调用 GRPO
 
-Hand-written Qwen2.5 LoRA experiment: compare base models, E2 toolcall LoRA, a separate cold-start SFT, and SFT+GRPO on calculator/search tasks. Core baselines and the 6,000-item E2 control are collected; seed-42 SFT is complete, and GRPO can recover from checkpoint 200 of 300. Seeds 43/44 and final trained comparisons remain unfinished. No claimed training improvement is present. See the [current recovery inputs and measured time basis](docs/mac-resume.md).
+在 Qwen2.5-1.5B-Instruct 上训练会调用工具的 agent：模型可以多轮调用计算器和检索工具，再给出答案。训练分两步：先用答对的轨迹做冷启动 SFT，再用 GRPO 强化学习。GRPO 的采样、奖励、优势和 loss 都在本仓库里手写，没有用 TRL 等现成框架，`src/` 约 1,400 行 Python。
 
-## Formal execution
+## 当前进度
 
-Use an already allocated GPU runtime assigned by root; run commands from its unpacked repository workspace, normally `/content/experiment-runs/<run_id>/workspace`. This repository does not allocate GPUs, start paid APIs or publish repositories.
+| 阶段 | 状态 |
+|---|---|
+| 原模型基线（直接答 / 带工具，各 1,000 题） | 完成 |
+| 冷启动 SFT（种子 42） | 完成 |
+| GRPO（种子 42，300 步） | 训练中，最新检查点在第 200 步 |
+| 种子 43、44 和训练后的完整评测 | 待做 |
+
+训练后的对比结果出来后补到这里。
+
+## 任务和工具
+
+- **GSM8K**：数学应用题，配计算器。计算器用受限的 AST 求值，只支持算术运算。
+- **HotpotQA**：多跳问答，配检索。每道题只能检索它自己的候选文档，用 BM25 排序。
+
+一条轨迹最多调用 4 次工具。工具结果插回上下文，模型继续生成，直到给出最终答案。
+
+## GRPO 的实现
+
+- **采样**：每步取 8 道题，每题采样 8 条轨迹，温度 1，不做 top-k / top-p 截断。
+- **奖励**：答对得 1 分（HotpotQA 用答案 F1）；轨迹里有能解析的工具调用加 0.1，每条轨迹只加一次；每调用一次工具扣 0.05。扣分是为了压住无意义的重复调用。
+- **优势**：同一道题的 8 条轨迹组内标准化。
+- **目标函数**：冻结旧策略的 log prob，做 clip（ε = 0.2），加 k3 形式的 KL（β = 0.04）。KL 的参考模型是关掉 LoRA 的基座模型；冷启动 SFT 只用来初始化策略。
+- **loss 范围**：只对模型自己生成的 token 算 loss。提示词和插入的工具结果都不算。先在每条轨迹内按 token 平均，再在轨迹间平均。
+- **训练设置**：LoRA rank 16，学习率 1e-5，每批采样更新 2 次，每 50 步存一次检查点。
+
+检查点里有 LoRA 权重、优化器状态和全部随机数状态，训练中断后可以从检查点原样续跑。SFT 每 25 步存一次，同样可以续跑。
+
+## 原模型基线
+
+同样 500 道 GSM8K 和 500 道 HotpotQA 测试题，Qwen2.5-1.5B-Instruct 不经训练：
+
+| 条件 | GSM8K 准确率 | HotpotQA 答案 F1 |
+|---|---:|---:|
+| 直接回答 | 63.8% | 0.136 |
+| 带工具 | 18.2% | 0.105 |
+
+原模型拿到工具反而答得更差。检查前 128 条带工具的轨迹，有 35 条用满了 4 次调用，这 35 条没有一条答对。典型情况是对没有文档的 GSM8K 题反复检索。这就是要训练的地方：让模型学会什么时候调工具、调完怎么用结果。详见 [基线结果](results/core-scored-v2/baseline-summary.md) 和 [评分规则](docs/scoring.md)。
+
+## 运行
 
 ```sh
 python -m pip install -e '.[train]'
-python -m pip uninstall -y torchvision torchaudio
 python scripts/run.py prepare --out data
-export RCLONE_HEADER='X-Goog-User-Project:pi-workspace-wu-4b7f3a'
-export EXP_CHECKPOINT_REMOTE='gdrive:exp/runs/E3'
+python scripts/run.py evaluate --config configs/a100.json --data data/test.jsonl \
+  --out results/eval-base-direct.jsonl --condition base-direct
+python scripts/run.py evaluate --config configs/a100.json --data data/test.jsonl \
+  --out results/eval-base-tools.jsonl --condition base-tools
+bash scripts/run_seeds.sh configs/a100.json   # 每个种子：收集轨迹、SFT、GRPO、评测
 ```
 
-The data command resolves dataset revisions and writes source hashes, train/dev/test JSONL. GSM8K dev is held out from train; its official test is final test. HotpotQA uses distractor training data and reserves its released validation set for final test. GSM-Symbolic main includes all released instances. Large input data is staged on local runtime disk; archive source data with rclone.
-
-Controller supplies private `RCLONE_CONFIG` and approved `RCLONE_HEADER` (quota-project header) to the runtime. `EXP_CHECKPOINT_REMOTE` is optional: when set, each completed local checkpoint is copied with `rclone copy` to `<prefix>/<run-directory>/<checkpoint-directory>`. A failed copy stops the command and leaves local files in place. There are no receipt state machines or required persistence gates.
-
-Formal 1.5B configuration is `configs/a100.json`: 300 steps, 8 questions × 8 trajectories, two updates per sampled batch, three seeds. `configs/l4-full.json` is the disclosed 0.5B alternative with the same formal step count. Model sizes and adapter compatibility must be reported accurately.
+从检查点续跑：
 
 ```sh
-python scripts/run.py evaluate --config configs/a100.json --data data/test.jsonl --out results/eval-base-direct.jsonl --condition base-direct
-python scripts/run.py evaluate --config configs/a100.json --data data/test.jsonl --out results/eval-base-tools.jsonl --condition base-tools
-# Set after E2 exports its 1.5B main adapter.
-export E2_ADAPTER=/content/e2-artifacts/main-seed42/adapter
-python scripts/run.py evaluate --config configs/a100.json --data data/test.jsonl --out results/eval-e2.jsonl --condition e2-lora --adapter "$E2_ADAPTER"
-bash scripts/run_seeds.sh configs/a100.json
-mkdir -p results/scored-v2
-for path in results/eval-*.jsonl; do
-  python scripts/run.py rescore --data data/test.jsonl --input "$path" --out "results/scored-v2/$(basename "$path")"
-done
-python scripts/run.py report results/scored-v2/eval-*.jsonl
-python scripts/verify_completion.py
+python scripts/run.py train --config configs/a100.json --data data/train.jsonl --dev data/dev.jsonl \
+  --out results/grpo-42 --seed 42 --adapter results/cold-42/adapter \
+  --resume results/grpo-42/checkpoint-0200
 ```
 
-The current A100 uses direct batch16 and subsequent tool/collection batches32; GRPO groups stay at eight responses and four groups are generated together. The seed script performs collection, SFT, SFT evaluation, GRPO, and GRPO evaluation for seeds 42/43/44. It can begin independently of E2; E2's adapter is only required for the separate E2 baseline and final complete comparison.
+`configs/a100.json` 是 1.5B 的正式配置，`configs/l4-full.json` 是 0.5B 的小配置。
 
-## Recovery
+## 目录
 
-Checkpoints contain LoRA weights, optimizer/scaler state, CPU/CUDA RNG and sampling RNG. Local files are written with normal model/tokenizer saves and `torch.save`; optional rclone copy follows saving.
-
-```sh
-# Retrieve a checkpoint on a fresh runtime.
-rclone copy gdrive:exp/runs/E3/grpo-42/checkpoint-0050 results/grpo-42/checkpoint-0050
-# Also retrieve the original cold-SFT adapter/checkpoint and stage the same data.
-python scripts/run.py train --config configs/a100.json --data data/train.jsonl --dev data/dev.jsonl --out results/grpo-42 --seed 42 --adapter results/cold-42/adapter --resume results/grpo-42/checkpoint-0050
-# Retry an optional upload without loading a model.
-python scripts/run.py copy-checkpoint results/grpo-42/checkpoint-0050
-```
-
-SFT checkpoints every 25 updates and supports `sft --resume <checkpoint>` with the original arguments. A saved SFT checkpoint itself can serve as a LoRA adapter. Collection resumes accepted task IDs and attempt counts; its restarted sampling stream is not claimed bitwise identical. Evaluation resumes completed task IDs. After an interrupted seed script, run the individual stage's resume command instead of restarting every stage.
-
-## Method
-
-- Frozen old-policy action log probabilities, clipped current/old ratios, and base-reference k3 KL implement the GRPO objective. LoRA/base dropout is zero and sampling temperature is 1 without top-k/top-p truncation.
-- Loss is averaged over generated action tokens per trajectory, then over trajectories. Prompt and inserted tool tokens are not loss targets. One trajectory per gradient microbatch limits GPU memory.
-- The reference for KL is the base model with LoRA disabled; cold-start SFT is the policy initialization, not the reference model.
-- Reward is answer correctness plus one per-trajectory parsing bonus of 0.1, minus 0.05 per tool call; at most four calls. Math correctness uses the pinned Qwen last-number extraction rule and Decimal exact equality. Original strict-v1 scores and final-tag compliance are reported separately. HotpotQA keeps normalized answer-token F1. See [scoring versions](docs/scoring.md).
-- Cold-start SFT uses correct trajectories from the training split. Checkpoint evaluations use held-out dev, never final test.
-- Direct HotpotQA baseline sees full context; tool conditions see titles and use question-local BM25 retrieval. Report truncation and this prompt difference.
-- Calculator uses bounded AST arithmetic. Python stays disabled unless Linux bubblewrap isolation passes; it never falls back to unisolated host execution.
-
-Reports include raw rows, seeds, hardware, config, model/data revisions and commit. Train-derived results use three seeds; GSM-Symbolic uncertainty resamples template clusters. Public benchmark contamination remains a limitation. See [sources](docs/baselines.md), [cost ledger](docs/cost.md), and [handoff](HANDOFF.md).
+| 路径 | 内容 |
+|---|---|
+| `src/agent_grpo/objective.py` | 组内优势和 GRPO loss |
+| `src/agent_grpo/rollout.py` | 多轮采样和工具调用 |
+| `src/agent_grpo/rewards.py` | 奖励函数 |
+| `src/agent_grpo/tools.py` | 计算器和检索 |
+| `src/agent_grpo/training.py` | 模型加载、检查点 |
+| `scripts/` | 运行入口 |
+| `results/` | 基线、训练记录和检查点元数据 |
+| `docs/` | 数据来源和评分规则 |
