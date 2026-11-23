@@ -8,7 +8,11 @@ parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument("records", type=Path)
 parser.add_argument("--block-size", type=int, default=20)
 args = parser.parse_args()
-rows = [json.loads(line) for line in args.records.read_text().splitlines()]
+if args.block_size < 1:
+    raise SystemExit("--block-size must be >= 1")
+rows = [json.loads(line) for line in args.records.read_text().splitlines() if line.strip()]
+if not rows:
+    raise SystemExit("no training records found")
 keys = ["reward", "correctness", "kl", "tool_calls", "response_tokens",
         "zero_advantage_group_fraction", "truncated_fraction", "seconds"]
 blocks = [rows[i:i + args.block_size] for i in range(0, len(rows), args.block_size)]

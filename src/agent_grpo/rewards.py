@@ -6,6 +6,11 @@ import string
 
 SCORE_VERSION = "v2-qwen-gsm-last-number-hotpot-f1"
 LAST_NUMBER = re.compile(r"([+-])?(?=([0-9]|\.[0-9]))(0|([1-9](\d{0,2}(,\d{3})*)|\d*))?(\.\d*)?(?=\D|$)")
+FINAL_TAG = re.compile(r"<final>[^<>]+</final>\s*$")
+
+
+def is_final_format_compliant(text):
+    return bool(FINAL_TAG.search(text))
 
 
 def final_answer(text):
@@ -85,5 +90,5 @@ def reward(task, text, calls, parsed_calls):
             "correctness": correctness, "parse_bonus": parse_bonus,
             "tool_penalty": tool_penalty, "tool_calls": calls,
             "strict_correctness_v1": score_answer_strict(task.dataset, text, task.answer),
-            "final_format_compliant": bool(re.search(r"<final>[^<>]+</final>\s*$", text)),
+            "final_format_compliant": is_final_format_compliant(text),
             "score_version": SCORE_VERSION}

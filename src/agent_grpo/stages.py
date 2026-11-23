@@ -3,16 +3,16 @@ from dataclasses import asdict
 import json
 from pathlib import Path
 import random
-import subprocess
-import sys
 import time
-from .schema import Trajectory, append_jsonl, read_tasks
-from .training import load_config, seed_all, model_and_tokenizer, token_logprobs, metadata, copy_outputs, copy_checkpoint
+from .schema import append_jsonl, read_tasks
+from .training import load_config, seed_all, model_and_tokenizer, token_logprobs, metadata, copy_outputs, copy_checkpoint, recorded_steps, resume_provenance
 from .rollout import sample_trajectory, batch_direct_trajectories, batch_tool_trajectories
 from .tools import probe_python_sandbox
 
 
 def collect(config_path, data_path, out_path, seed=42, target=500, attempts_per_question=2, batch_size=32):
+    if batch_size < 1:
+        raise ValueError("batch_size must be >= 1")
     config = load_config(config_path)
     tasks = read_tasks(data_path)
     if not tasks or any(task.split != "train" for task in tasks):
@@ -96,6 +96,22 @@ def collect(config_path, data_path, out_path, seed=42, target=500, attempts_per_
     copy_outputs([out, meta_path, attempts_path, executions_path], "data")
 
 
+def assert_trajectory_source(collection_meta, config, model):
+    """SFT may only train on trajectories from this model.
+
+    Older collection sidecars stored the revision only under config.model_revision.
+    A missing revision is acceptable when the loaded model also has none; a present
+    revision must match the resolved model commit.
+    """
+    recorded_model = (collection_meta.get("config") or {}).get("model")
+    recorded_revision = collection_meta.get("model_revision_resolved")
+    if recorded_revision is None:
+        recorded_revision = (collection_meta.get("config") or {}).get("model_revision")
+    resolved = getattr(getattr(model, "config", None), "_commit_hash", None)
+    if not recorded_model or recorded_model != config["model"] or recorded_revision != resolved:
+        raise ValueError("SFT trajectories came from another model/tokenizer revision")
+
+
 def sft(config_path, trajectories_path, out_dir, seed=42, epochs=1, resume=None):
     import torch
     config = load_config(config_path)
@@ -109,8 +125,7 @@ def sft(config_path, trajectories_path, out_dir, seed=42, epochs=1, resume=None)
     out.mkdir(parents=True, exist_ok=True)
     model, tokenizer = model_and_tokenizer(config, resume, trainable=True)
     collection_meta = json.loads(Path(str(trajectories_path) + ".metadata.json").read_text())
-    if collection_meta["config"]["model"] != config["model"] or collection_meta["model_revision_resolved"] != getattr(model.config, "_commit_hash", None):
-        raise ValueError("SFT trajectories came from another model/tokenizer revision")
+    assert_trajectory_source(collection_meta, config, model)
     device = next(model.parameters()).device
     optimizer = torch.optim.AdamW((p for p in model.parameters() if p.requires_grad), lr=config.get("sft_learning_rate", 2e-4))
     scaler = torch.amp.GradScaler("cuda", enabled=config["dtype"] == "float16" and device.type == "cuda")
@@ -121,12 +136,16 @@ def sft(config_path, trajectories_path, out_dir, seed=42, epochs=1, resume=None)
     rng = random.Random(seed)
     batches_per_epoch = (len(records) + accumulation - 1) // accumulation
     start_step = 0
+    logged_steps = recorded_steps(out / "train.jsonl")
     if resume:
+        resume_provenance(resume, out, meta, ("config", "data_sha256", "model_revision_resolved", "seed"), "SFT")
         state = torch.load(Path(resume) / "training-state.pt", map_location="cpu", weights_only=False)
         optimizer.load_state_dict(state["optimizer"])
         scaler.load_state_dict(state["scaler"])
         torch.set_rng_state(state["torch_rng"])
-        if state["cuda_rng"]:
+        if state["cuda_rng"] and torch.cuda.is_available():
+            if len(state["cuda_rng"]) != torch.cuda.device_count():
+                raise RuntimeError("CUDA device count does not match checkpoint RNG state")
             torch.cuda.set_rng_state_all(state["cuda_rng"])
         start_step = state["step"]
     for epoch in range(epochs):
@@ -153,7 +172,9 @@ def sft(config_path, trajectories_path, out_dir, seed=42, epochs=1, resume=None)
             torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
             scaler.step(optimizer)
             scaler.update()
-            append_jsonl(out / "train.jsonl", {"step": step, "epoch": epoch + 1, "offset": offset, "loss": sum(losses) / len(losses)})
+            if step not in logged_steps:
+                append_jsonl(out / "train.jsonl", {"step": step, "epoch": epoch + 1, "offset": offset, "loss": sum(losses) / len(losses)})
+                logged_steps.add(step)
             if step % 25 == 0 or step == epochs * batches_per_epoch:
                 save_checkpoint(out / f"checkpoint-{step:04d}", model, tokenizer, optimizer, scaler, step, rng, meta)
     model.save_pretrained(out / "adapter")
@@ -165,8 +186,32 @@ def sft(config_path, trajectories_path, out_dir, seed=42, epochs=1, resume=None)
     copy_outputs([out / "run.json", out / "train.jsonl"], out.name)
 
 
+def _existing_evaluation_rows(out, meta_path, tasks, condition, seed):
+    """Reject a resume that would hide duplicate or foreign rows. Runs before model load."""
+    if not out.exists():
+        return {}
+    if not meta_path.exists():
+        raise ValueError("evaluation output has no provenance; inspect it before resuming")
+    rows = [json.loads(line) for line in out.read_text().splitlines() if line.strip()]
+    ids = [row.get("task_id") for row in rows]
+    if len(ids) != len(set(ids)):
+        raise ValueError("duplicate evaluation task IDs")
+    expected_split = tasks[0].split
+    for row in rows:
+        if row.get("condition") != condition:
+            raise ValueError("cannot append incompatible evaluation: condition")
+        if row.get("seed") != seed:
+            raise ValueError("cannot append incompatible evaluation: seed")
+        if row.get("split") != expected_split:
+            raise ValueError("cannot append incompatible evaluation: split")
+    if set(ids) - {task.id for task in tasks}:
+        raise ValueError("result includes unexpected task IDs")
+    return {row["task_id"]: row for row in rows}
+
+
 def evaluate(config_path, data_path, out_path, condition, seed=42, adapter=None, batch_size=1):
-    import torch
+    if batch_size < 1:
+        raise ValueError("batch_size must be >= 1")
     conditions = {"base-direct", "base-tools", "e2-lora", "cold-sft", "grpo"}
     if condition not in conditions:
         raise ValueError("unknown condition")
@@ -181,13 +226,11 @@ def evaluate(config_path, data_path, out_path, condition, seed=42, adapter=None,
     if config.get("python_tool") and not probe_python_sandbox():
         raise RuntimeError("Python tool sandbox probe failed")
     out = Path(out_path)
-    done = {}
-    if out.exists():
-        done = {row["task_id"]: row for row in (json.loads(line) for line in out.read_text().split("\n") if line.strip())}
+    meta_path = Path(str(out) + ".metadata.json")
+    done = _existing_evaluation_rows(out, meta_path, tasks, condition, seed)
     model, tokenizer = model_and_tokenizer(config, adapter)
     meta = metadata(config, data_path, model)
     meta.update(condition=condition, seed=seed, adapter=adapter, split=tasks[0].split, tasks=len(tasks))
-    meta_path = Path(str(out) + ".metadata.json")
     if meta_path.exists():
         previous = json.loads(meta_path.read_text())
         for key in ["config", "data_sha256", "condition", "seed", "adapter", "split", "tasks", "model_revision_resolved"]:
@@ -196,8 +239,6 @@ def evaluate(config_path, data_path, out_path, condition, seed=42, adapter=None,
     else:
         meta_path.parent.mkdir(parents=True, exist_ok=True)
         meta_path.write_text(json.dumps(meta, indent=2) + "\n")
-    if set(done) - {task.id for task in tasks}:
-        raise ValueError("result includes unexpected task IDs")
     execution = {"created_at": meta["created_at"], "git_commit": meta["git_commit"],
                  "existing_rows": len(done), "requested_batch_size": batch_size,
                  "effective_batch_size": batch_size}

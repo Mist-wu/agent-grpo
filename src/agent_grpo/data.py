@@ -1,5 +1,5 @@
 """Source adapters and deterministic disjoint train/dev/final test partitions."""
-from dataclasses import asdict
+from dataclasses import replace
 import hashlib
 import json
 from pathlib import Path
@@ -38,13 +38,9 @@ def split_train(tasks, train_count=3000, dev_count=100, seed=42):
     random.Random(seed).shuffle(indices)
     train, dev = [], []
     for index in indices[:train_count]:
-        task = tasks[index]
-        task.split = "train"
-        train.append(task)
+        train.append(replace(tasks[index], split="train"))
     for index in indices[train_count:train_count + dev_count]:
-        task = tasks[index]
-        task.split = "dev"
-        dev.append(task)
+        dev.append(replace(tasks[index], split="dev"))
     return train, dev
 
 

@@ -51,7 +51,7 @@ def write_jsonl(path, rows):
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w") as stream:
         for row in rows:
-            stream.write(json.dumps(asdict(row) if hasattr(row, "__dataclass_fields__") else row, ensure_ascii=False) + "\n")
+            stream.write(json.dumps(asdict(row) if hasattr(row, "__dataclass_fields__") else row, ensure_ascii=False, allow_nan=False) + "\n")
 
 
 def append_jsonl(path, row):

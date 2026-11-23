@@ -1,7 +1,6 @@
 """Bounded deterministic tools; Python is fail-closed unless bwrap is usable."""
 import ast
 from collections import Counter
-import json
 import math
 import operator
 import os
@@ -14,7 +13,9 @@ import subprocess
 import sys
 import time
 
-from .tool_format import TOOL_CALL_START, TOOL_CALL_END, parse_tool_calls
+
+def _tokenize(text):
+    return re.findall(r"\w+", text.lower())
 
 
 def calculator(expr):
@@ -42,20 +43,24 @@ def calculator(expr):
 def search(query, documents, k=2):
     if not isinstance(query, str) or len(query) > 1024:
         raise ValueError("invalid search query")
-    tokenize = lambda text: re.findall(r"\w+", text.lower())
-    corpus = [tokenize(doc["title"] + " " + doc["text"]) for doc in documents]
+    corpus = [_tokenize(doc["title"] + " " + doc["text"]) for doc in documents]
     if not corpus:
+        return []
+    query_terms = set(_tokenize(query))
+    if not query_terms:
         return []
     frequencies = [Counter(tokens) for tokens in corpus]
     avg = sum(map(len, corpus)) / len(corpus) or 1
+    idfs = {
+        term: math.log(1 + (len(corpus) - df + 0.5) / (df + 0.5))
+        for term in query_terms
+        for df in (sum(term in counts for counts in frequencies),)
+    }
     scores = []
     for index, tokens in enumerate(corpus):
-        score = 0.0
-        for term in set(tokenize(query)):
-            df = sum(term in counts for counts in frequencies)
-            idf = math.log(1 + (len(corpus) - df + 0.5) / (df + 0.5))
-            tf = frequencies[index][term]
-            score += idf * tf * 2.5 / (tf + 1.5 * (0.25 + 0.75 * len(tokens) / avg))
+        counts = frequencies[index]
+        norm = 1.5 * (0.25 + 0.75 * len(tokens) / avg)
+        score = sum(idfs[term] * counts[term] * 2.5 / (counts[term] + norm) for term in query_terms if counts[term])
         scores.append((score, index))
     return [documents[index] for score, index in sorted(scores, key=lambda pair: (-pair[0], pair[1]))[:k] if score > 0]
 
@@ -126,7 +131,10 @@ try:
 except OSError: pass
 assert not os.path.exists('/home') and not os.path.exists('/content')
 print('SANDBOX_OK')"""
-    return python_sandbox(probe).strip() == "SANDBOX_OK"
+    try:
+        return python_sandbox(probe).strip() == "SANDBOX_OK"
+    except (RuntimeError, ValueError, TimeoutError, OSError):
+        return False
 
 
 def tool_schemas(enable_python=False):
