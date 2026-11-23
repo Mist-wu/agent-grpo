@@ -29,7 +29,7 @@ class ResumeTests(unittest.TestCase):
             with patch('agent_grpo.stages.model_and_tokenizer', return_value=(None, None)), \
                  patch('agent_grpo.stages.seed_all'), \
                  patch('agent_grpo.stages.metadata', side_effect=lambda *args: dict(meta)), \
-                 patch('agent_grpo.stages.batch_tool_trajectories', side_effect=sample_batch) as sampling:
+                 patch('agent_grpo.stages.sample_trajectories', side_effect=sample_batch) as sampling:
                 collect(config, data, out, target=1)
                 self.assertEqual(sampling.call_count, 1)
                 collect(config, data, out, target=1)
@@ -60,36 +60,11 @@ class ResumeTests(unittest.TestCase):
                 evaluate(config, data, out, 'base-direct', batch_size=1)
 
     def test_training_resume_checks_checkpoint_metadata_and_preserves_run_json(self):
-        import torch
-        from agent_grpo.training import training
         with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory)
-            train_path = root / 'train.jsonl'
-            dev_path = root / 'dev.jsonl'
-            config_path = root / 'config.json'
-            ckpt = root / 'checkpoint-0001'
-            out = root / 'run'
-            ckpt.mkdir()
-            out.mkdir()
-            write_jsonl(train_path, [Task('tr1', 'gsm8k', 'Q', '2', 'train')])
-            write_jsonl(dev_path, [Task('dv1', 'gsm8k', 'Q', '2', 'dev')])
-            cfg = {'temperature': 1.0, 'group_size': 2, 'update_epochs': 1, 'steps': 1,
-                   'learning_rate': 1e-5, 'dtype': 'float32', 'device': 'cpu', 'checkpoint_every': 1,
-                   'max_new_tokens': 10, 'max_sequence_length': 32, 'questions_per_step': 1,
-                   'kl_beta': 0.04, 'clip_epsilon': 0.2, 'model': 'fixture'}
-            config_path.write_text(json.dumps(cfg))
+            training, config_path, train_path, dev_path, ckpt, out, model, meta = self._training_fixture(Path(directory))
             original_run = {'preserved': True}
             (out / 'run.json').write_text(json.dumps(original_run))
             (out / 'env.txt').write_text('original-env\n')
-            model = torch.nn.Linear(2, 2)
-            opt = torch.optim.AdamW(model.parameters(), lr=1e-5)
-            scaler = torch.amp.GradScaler('cuda', enabled=False)
-            import random
-            torch.save({'optimizer': opt.state_dict(), 'scaler': scaler.state_dict(), 'step': 1,
-                        'sampling_rng': random.Random(42).getstate(), 'torch_rng': torch.get_rng_state(),
-                        'cuda_rng': []}, ckpt / 'training-state.pt')
-            meta = {'config': {**cfg, 'seed': 42, 'initial_adapter': 'adapter'}, 'data_sha256': 'same',
-                    'model_revision_resolved': 'rev1'}
             (ckpt / 'metadata.json').write_text(json.dumps({**meta, 'data_sha256': 'different'}))
             with patch('agent_grpo.training.model_and_tokenizer', return_value=(model, None)), \
                  patch('agent_grpo.training.seed_all'), \
@@ -160,9 +135,7 @@ class ResumeTests(unittest.TestCase):
                     training(config_path, train_path, out, seed=42, adapter='adapter', resume=ckpt, dev_path=dev_path)
 
     def test_resume_backfills_missing_dev_and_does_not_duplicate_logged_steps(self):
-        import torch
         from contextlib import nullcontext
-        from agent_grpo.schema import Trajectory
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             training, config_path, train_path, dev_path, ckpt, out, model, meta = self._training_fixture(root, steps=1)
@@ -178,7 +151,7 @@ class ResumeTests(unittest.TestCase):
             with patch('agent_grpo.training.model_and_tokenizer', return_value=(model, None)), \
                  patch('agent_grpo.training.seed_all'), \
                  patch('agent_grpo.training.metadata', side_effect=lambda *args: dict(meta)), \
-                 patch('agent_grpo.training.batch_tool_trajectories', side_effect=fake_batch) as sampled:
+                 patch('agent_grpo.training.sample_trajectories', side_effect=fake_batch) as sampled:
                 training(config_path, train_path, out, seed=42, adapter='adapter', resume=ckpt, dev_path=dev_path)
                 self.assertEqual(sampled.call_count, 1)
                 dev_rows = [json.loads(line) for line in (out / 'dev.jsonl').read_text().splitlines() if line.strip()]
@@ -188,9 +161,6 @@ class ResumeTests(unittest.TestCase):
                 dev_rows = [json.loads(line) for line in (out / 'dev.jsonl').read_text().splitlines() if line.strip()]
                 self.assertEqual(len(dev_rows), 1)
 
-            state = torch.load(ckpt / 'training-state.pt', weights_only=False)
-            state['step'] = 1
-            torch.save(state, ckpt / 'training-state.pt')
             (out / 'train.jsonl').write_text(json.dumps({'step': 2, 'seed': 42, 'loss': 0.1}) + '\n')
             (out / 'rollouts.jsonl').write_text(json.dumps({'step': 2, 'task_id': 'tr1'}) + '\n')
             config = json.loads(config_path.read_text())
@@ -205,7 +175,7 @@ class ResumeTests(unittest.TestCase):
             with patch('agent_grpo.training.model_and_tokenizer', return_value=(model, None)), \
                  patch('agent_grpo.training.seed_all'), \
                  patch('agent_grpo.training.metadata', side_effect=lambda *args: dict(meta)), \
-                 patch('agent_grpo.training.batch_tool_trajectories', side_effect=fake_batch), \
+                 patch('agent_grpo.training.sample_trajectories', side_effect=fake_batch), \
                  patch('agent_grpo.training.token_logprobs', side_effect=fake_logprobs), \
                  patch('agent_grpo.training.save_checkpoint'):
                 training(config_path, train_path, out, seed=42, adapter='adapter', resume=ckpt, dev_path=dev_path)

@@ -38,8 +38,15 @@ class Trajectory:
             raise ValueError("first token cannot be a predicted action")
 
 
+def read_jsonl(path):
+    with Path(path).open() as stream:
+        for line in stream:
+            if line.strip():
+                yield json.loads(line)
+
+
 def read_tasks(path):
-    tasks = [Task(**json.loads(line)) for line in Path(path).read_text().split("\n") if line.strip()]
+    tasks = [Task(**row) for row in read_jsonl(path)]
     ids = [task.id for task in tasks]
     if len(set(ids)) != len(ids):
         raise ValueError("duplicate task IDs")
@@ -59,4 +66,3 @@ def append_jsonl(path, row):
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("a") as stream:
         stream.write(json.dumps(row, ensure_ascii=False, allow_nan=False) + "\n")
-        stream.flush()

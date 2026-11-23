@@ -10,8 +10,8 @@ import subprocess
 import sys
 import time
 from .objective import group_advantages, grpo_loss
-from .rollout import batch_tool_trajectories
-from .schema import append_jsonl, read_tasks
+from .rollout import sample_trajectories
+from .schema import append_jsonl, read_jsonl, read_tasks
 from .tools import probe_python_sandbox
 
 
@@ -41,7 +41,7 @@ def model_and_tokenizer(config, adapter=None, trainable=False):
         raise RuntimeError("CUDA required by config")
     dtype = getattr(torch, config["dtype"])
     if device == "cuda" and dtype == torch.bfloat16 and not torch.cuda.is_bf16_supported():
-        raise RuntimeError("bf16 unsupported on this GPU; choose t4 profile with float16")
+        raise RuntimeError("bf16 unsupported on this GPU; set dtype to float16")
     model = AutoModelForCausalLM.from_pretrained(config["model"], revision=config.get("model_revision", "main"),
                     torch_dtype=dtype, attn_implementation="sdpa")
     tokenizer = AutoTokenizer.from_pretrained(config["model"], revision=config.get("model_revision", "main"))
@@ -103,11 +103,8 @@ def _json_object(path):
     path = Path(path)
     if not path.is_file():
         return None
-    text = path.read_text().strip()
-    if not text:
-        return None
     try:
-        value = json.loads(text)
+        value = json.loads(path.read_text())
     except json.JSONDecodeError:
         return None
     return value if isinstance(value, dict) and value else None
@@ -124,11 +121,7 @@ def resume_provenance(checkpoint_dir, out_dir, current, required, label, optiona
     history = _json_object(Path(out_dir) / "run.json")
     if checkpoint is None and history is None:
         raise ValueError(f"{label} provenance is not verifiable")
-    merged = {}
-    if history:
-        merged.update(history)
-    if checkpoint:
-        merged.update(checkpoint)
+    merged = (history or {}) | (checkpoint or {})
     for key in required:
         if key not in merged:
             raise ValueError(f"{label} provenance is not verifiable: {key}")
@@ -141,14 +134,7 @@ def resume_provenance(checkpoint_dir, out_dir, current, required, label, optiona
 
 
 def recorded_steps(path):
-    steps = set()
-    path = Path(path)
-    if not path.exists():
-        return steps
-    for line in path.read_text().splitlines():
-        if line.strip():
-            steps.add(json.loads(line).get("step"))
-    return steps
+    return {row.get("step") for row in read_jsonl(path)} if Path(path).exists() else set()
 
 
 def drop_uncommitted_rollouts(path, committed_steps, checkpoint_step):
@@ -156,7 +142,7 @@ def drop_uncommitted_rollouts(path, committed_steps, checkpoint_step):
     path = Path(path)
     if not path.exists():
         return
-    rows = [json.loads(line) for line in path.read_text().splitlines() if line.strip()]
+    rows = list(read_jsonl(path))
     kept = []
     for row in rows:
         step = row.get("step")
@@ -170,10 +156,7 @@ def dev_datasets_missing(path, step, datasets):
     present = set()
     path = Path(path)
     if path.exists():
-        for line in path.read_text().splitlines():
-            if not line.strip():
-                continue
-            row = json.loads(line)
+        for row in read_jsonl(path):
             if row.get("step") == step:
                 present.add(row.get("dataset"))
     return [dataset for dataset in datasets if dataset not in present]
@@ -186,14 +169,12 @@ def step_is_checkpoint(step, config):
 def write_dev_metrics(model, tokenizer, config, dev_tasks, out, step):
     datasets = sorted({task.dataset for task in dev_tasks})
     missing = dev_datasets_missing(out / "dev.jsonl", step, datasets)
-    if not missing:
-        return
     eval_batch_size = config.get("eval_batch_size", 32)
     for dataset in missing:
         subset = [task for task in dev_tasks if task.dataset == dataset][:50]
         values = []
         for offset in range(0, len(subset), eval_batch_size):
-            trajectories = batch_tool_trajectories(model, tokenizer, subset[offset:offset + eval_batch_size],
+            trajectories = sample_trajectories(model, tokenizer, subset[offset:offset + eval_batch_size],
                 temperature=0, max_new_tokens=config["max_new_tokens"],
                 max_sequence_length=config["max_sequence_length"],
                 enable_python=config.get("python_tool", False))
@@ -233,6 +214,22 @@ def save_checkpoint(directory, model, tokenizer, optimizer, scaler, step, rng, m
                 "cuda_rng": torch.cuda.get_rng_state_all() if torch.cuda.is_available() else []}, directory / "training-state.pt")
     (directory / "metadata.json").write_text(json.dumps(meta, indent=2) + "\n")
     copy_checkpoint(directory)
+
+
+def restore_checkpoint(resume, optimizer, scaler, rng=None):
+    import torch
+    # Only load checkpoints created by this trusted experiment, never third-party pickles.
+    state = torch.load(Path(resume) / "training-state.pt", map_location="cpu", weights_only=False)
+    optimizer.load_state_dict(state["optimizer"])
+    scaler.load_state_dict(state["scaler"])
+    if rng is not None:
+        rng.setstate(state["sampling_rng"])
+    torch.set_rng_state(state["torch_rng"])
+    if state["cuda_rng"] and torch.cuda.is_available():
+        if len(state["cuda_rng"]) != torch.cuda.device_count():
+            raise RuntimeError("CUDA device count does not match checkpoint RNG state")
+        torch.cuda.set_rng_state_all(state["cuda_rng"])
+    return state["step"]
 
 
 def training(config_path, data_path, out_dir, seed, adapter=None, resume=None, dev_path=None):
@@ -277,22 +274,13 @@ def training(config_path, data_path, out_dir, seed, adapter=None, resume=None, d
     rng = random.Random(seed)
     start = 0
     if resume:
-        # Only load checkpoints created by this trusted experiment, never third-party pickles.
-        state = torch.load(Path(resume) / "training-state.pt", map_location="cpu", weights_only=False)
-        optimizer.load_state_dict(state["optimizer"])
-        scaler.load_state_dict(state["scaler"])
-        rng.setstate(state["sampling_rng"])
-        torch.set_rng_state(state["torch_rng"])
-        if state["cuda_rng"] and torch.cuda.is_available():
-            if len(state["cuda_rng"]) != torch.cuda.device_count():
-                raise RuntimeError("CUDA device count does not match checkpoint RNG state")
-            torch.cuda.set_rng_state_all(state["cuda_rng"])
-        start = state["step"]
+        start = restore_checkpoint(resume, optimizer, scaler, rng)
     logged_steps = recorded_steps(out / "train.jsonl")
     if resume:
         drop_uncommitted_rollouts(out / "rollouts.jsonl", logged_steps, start)
         if step_is_checkpoint(start, config):
             write_dev_metrics(model, tokenizer, config, dev_tasks, out, start)
+    outputs = [out / name for name in ("run.json", "env.txt", "train.jsonl", "rollouts.jsonl", "dev.jsonl")]
     for step in range(start, config["steps"]):
         started = time.monotonic()
         step_no = step + 1
@@ -304,10 +292,10 @@ def training(config_path, data_path, out_dir, seed, adapter=None, resume=None, d
         sampled_trajectories = []
         for offset in range(0, len(sampled), questions_per_batch):
             rollout_tasks = [task for task in sampled[offset:offset + questions_per_batch] for _ in range(group_size)]
-            sampled_trajectories.extend(batch_tool_trajectories(model, tokenizer, rollout_tasks,
+            sampled_trajectories.extend(sample_trajectories(model, tokenizer, rollout_tasks,
                 temperature=config["temperature"], max_new_tokens=config["max_new_tokens"],
                 max_sequence_length=config["max_sequence_length"], enable_python=config.get("python_tool", False)))
-        for group_index, task in enumerate(sampled):
+        for group_index in range(len(sampled)):
             trajectories = sampled_trajectories[group_index * group_size:(group_index + 1) * group_size]
             advantages = group_advantages([t.reward["total"] for t in trajectories])
             zero_groups += int(all(a == 0 for a in advantages))
@@ -323,7 +311,7 @@ def training(config_path, data_path, out_dir, seed, adapter=None, resume=None, d
                 if keep_log:
                     append_jsonl(out / "rollouts.jsonl", {"step": step_no, **asdict(trajectory)})
         metrics = []
-        for epoch in range(config["update_epochs"]):
+        for _ in range(config["update_epochs"]):
             optimizer.zero_grad(set_to_none=True)
             for trajectory, advantage, old, reference in batch:
                 current = token_logprobs(model, trajectory.token_ids, device)
@@ -351,9 +339,10 @@ def training(config_path, data_path, out_dir, seed, adapter=None, resume=None, d
             append_jsonl(out / "train.jsonl", record)
             logged_steps.add(step_no)
         print(json.dumps(record), flush=True)
-        if step_no % config["checkpoint_every"] == 0 or step_no == config["steps"]:
+        if step_is_checkpoint(step_no, config):
             save_checkpoint(out / f"checkpoint-{step_no:04d}", model, tokenizer, optimizer, scaler, step_no, rng, meta)
             write_dev_metrics(model, tokenizer, config, dev_tasks, out, step_no)
-            copy_outputs([p for p in (out / name for name in ["run.json", "env.txt", "train.jsonl", "rollouts.jsonl", "dev.jsonl"]) if p.exists()], out.name)
-    copy_outputs([p for p in (out / name for name in ["run.json", "env.txt", "train.jsonl", "rollouts.jsonl", "dev.jsonl"]) if p.exists()], out.name)
+            if step_no < config["steps"]:
+                copy_outputs([p for p in outputs if p.exists()], out.name)
+    copy_outputs([p for p in outputs if p.exists()], out.name)
     return out

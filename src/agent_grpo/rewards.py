@@ -81,14 +81,15 @@ def score_answer(dataset, prediction, answer):
     return float(pred is not None and gold is not None and pred == gold)
 
 
-def reward(task, text, calls, parsed_calls):
+def scored_reward(task, text, parse_bonus, tool_penalty):
     correctness = score_answer(task.dataset, text, task.answer)
-    # One per-trajectory parsing bonus, never a bonus per repeated tool call.
+    return {"total": correctness + parse_bonus - tool_penalty, "correctness": correctness,
+            "strict_correctness_v1": score_answer_strict(task.dataset, text, task.answer),
+            "final_format_compliant": is_final_format_compliant(text), "score_version": SCORE_VERSION}
+
+
+def reward(task, text, calls, parsed_calls):
     parse_bonus = 0.1 if parsed_calls > 0 else 0.0
     tool_penalty = 0.05 * calls
-    return {"total": correctness + parse_bonus - tool_penalty,
-            "correctness": correctness, "parse_bonus": parse_bonus,
-            "tool_penalty": tool_penalty, "tool_calls": calls,
-            "strict_correctness_v1": score_answer_strict(task.dataset, text, task.answer),
-            "final_format_compliant": is_final_format_compliant(text),
-            "score_version": SCORE_VERSION}
+    return {**scored_reward(task, text, parse_bonus, tool_penalty),
+            "parse_bonus": parse_bonus, "tool_penalty": tool_penalty, "tool_calls": calls}

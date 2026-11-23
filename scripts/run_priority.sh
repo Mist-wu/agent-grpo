@@ -16,13 +16,7 @@ PY
 if [ "$start" = core ]; then
   python scripts/run.py evaluate --config "$config" --data data/test-core.jsonl --out results/core/eval-base-tools.jsonl --condition base-tools --batch-size "${E3_TOOL_BATCH_SIZE:-32}"
 fi
-for seed in 42 43 44; do
-  python scripts/run.py collect --config "$config" --data data/train.jsonl --out "data/cold-${seed}.jsonl" --seed "$seed" --target 500 --batch-size "${E3_COLLECTION_BATCH_SIZE:-128}"
-  python scripts/run.py sft --config "$config" --data "data/cold-${seed}.jsonl" --out "results/cold-${seed}" --seed "$seed"
-  python scripts/run.py train --config "$config" --data data/train.jsonl --dev data/dev.jsonl --out "results/grpo-${seed}" --seed "$seed" --adapter "results/cold-${seed}/adapter"
-  python scripts/run.py evaluate --config "$config" --data data/test-core.jsonl --out "results/core/eval-cold-${seed}.jsonl" --seed "$seed" --condition cold-sft --adapter "results/cold-${seed}/adapter" --batch-size "${E3_TOOL_BATCH_SIZE:-32}"
-  python scripts/run.py evaluate --config "$config" --data data/test-core.jsonl --out "results/core/eval-grpo-${seed}.jsonl" --seed "$seed" --condition grpo --adapter "results/grpo-${seed}/checkpoint-0300" --batch-size "${E3_TOOL_BATCH_SIZE:-32}"
-done
+bash scripts/run_seeds.sh "$config" core
 
 # Complete the original 6,000-row conditions, reusing every core generation.
 python scripts/run.py evaluate --config "$config" --data data/test.jsonl --out results/eval-base-direct.jsonl --condition base-direct --batch-size "${E3_DIRECT_BATCH_SIZE:-32}"

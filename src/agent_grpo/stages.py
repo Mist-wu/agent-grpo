@@ -1,12 +1,14 @@
 """Cold-start rejection sampling, assistant-token SFT and held-out evaluation."""
+from collections import Counter
 from dataclasses import asdict
 import json
 from pathlib import Path
 import random
 import time
-from .schema import append_jsonl, read_tasks
-from .training import load_config, seed_all, model_and_tokenizer, token_logprobs, metadata, copy_outputs, copy_checkpoint, recorded_steps, resume_provenance
-from .rollout import sample_trajectory, batch_direct_trajectories, batch_tool_trajectories
+from .schema import append_jsonl, read_jsonl, read_tasks
+from .training import (copy_checkpoint, copy_outputs, load_config, metadata, model_and_tokenizer,
+                       recorded_steps, restore_checkpoint, resume_provenance, save_checkpoint, seed_all, token_logprobs)
+from .rollout import sample_trajectories
 from .tools import probe_python_sandbox
 
 
@@ -22,16 +24,16 @@ def collect(config_path, data_path, out_path, seed=42, target=500, attempts_per_
     out = Path(out_path)
     meta_path = Path(str(out) + ".metadata.json")
     attempts_path = Path(str(out) + ".attempts.jsonl")
-    accepted_rows = [json.loads(line) for line in out.read_text().split("\n") if line.strip()] if out.exists() else []
-    accepted_ids = {row["task_id"] for row in accepted_rows}
-    if len(accepted_ids) != len(accepted_rows):
-        raise ValueError("duplicate accepted collection rows")
-    if out.exists() and not meta_path.exists():
-        raise ValueError("collection has no provenance; inspect it before resuming")
-    attempts = [json.loads(line) for line in attempts_path.read_text().split("\n") if line.strip()] if attempts_path.exists() else []
-    counts = {}
-    for row in attempts:
-        counts[row["task_id"]] = counts.get(row["task_id"], 0) + 1
+    accepted_ids = set()
+    if out.exists():
+        if not meta_path.exists():
+            raise ValueError("collection has no provenance; inspect it before resuming")
+        for row in read_jsonl(out):
+            if row["task_id"] in accepted_ids:
+                raise ValueError("duplicate accepted collection rows")
+            accepted_ids.add(row["task_id"])
+    counts = Counter(row["task_id"] for row in read_jsonl(attempts_path)) if attempts_path.exists() else Counter()
+    attempted = counts.total()
     seed_all(seed)
     random.Random(seed).shuffle(tasks)
     model, tokenizer = model_and_tokenizer(config)
@@ -47,36 +49,35 @@ def collect(config_path, data_path, out_path, seed=42, target=500, attempts_per_
         if not executions_path.exists():
             append_jsonl(executions_path, {"git_commit": previous["git_commit"], "created_at": previous["created_at"],
                 "batch_size": previous.get("rollout_batch_size", 32), "existing_rows": 0,
-                "preserved_rows_at_transition": len(accepted_rows), "attempts_at_transition": len(attempts)})
+                "preserved_rows_at_transition": len(accepted_ids), "attempts_at_transition": attempted})
     append_jsonl(executions_path, {"git_commit": meta["git_commit"], "created_at": meta["created_at"],
-        "batch_size": batch_size, "existing_rows": len(accepted_rows), "existing_attempts": len(attempts)})
+        "batch_size": batch_size, "existing_rows": len(accepted_ids), "existing_attempts": attempted})
     meta_path.parent.mkdir(parents=True, exist_ok=True)
     meta_path.write_text(json.dumps(meta, indent=2) + "\n")
-    accepted, attempted = len(accepted_ids), len(attempts)
     last_copy = time.monotonic()
-    pending = [task for task in tasks if task.id not in accepted_ids and counts.get(task.id, 0) < attempts_per_question]
+    pending = [task for task in tasks if task.id not in accepted_ids and counts[task.id] < attempts_per_question]
     cursor = 0
-    while accepted < target and cursor < len(pending):
-        batch = pending[cursor:cursor + min(batch_size, target - accepted)]
+    while len(accepted_ids) < target and cursor < len(pending):
+        batch = pending[cursor:cursor + min(batch_size, target - len(accepted_ids))]
         cursor += len(batch)
         for _ in range(attempts_per_question):
-            active = [task for task in batch if task.id not in accepted_ids and counts.get(task.id, 0) < attempts_per_question]
+            active = [task for task in batch if task.id not in accepted_ids and counts[task.id] < attempts_per_question]
             if not active:
                 break
-            trajectories = batch_tool_trajectories(model, tokenizer, active, temperature=config["temperature"],
+            trajectories = sample_trajectories(model, tokenizer, active, temperature=config["temperature"],
                 max_new_tokens=config["max_new_tokens"], max_sequence_length=config["max_sequence_length"],
                 enable_python=config.get("python_tool", False))
             for task, trajectory in zip(active, trajectories):
                 attempted += 1
-                counts[task.id] = counts.get(task.id, 0) + 1
+                counts[task.id] += 1
                 success = trajectory.reward["correctness"] == 1 and not trajectory.truncated
                 if success:
                     append_jsonl(out, {**asdict(trajectory), "source_split": "train", "seed": seed,
                                       "execution_commit": meta["git_commit"]})
                     accepted_ids.add(task.id)
-                    accepted += 1
                 append_jsonl(attempts_path, {"task_id": task.id, "accepted": success, "reward": trajectory.reward,
                                            "execution_commit": meta["git_commit"]})
+            accepted = len(accepted_ids)
             print(json.dumps({"stage": "cold-collection", "seed": seed, "accepted": accepted,
                               "target": target, "attempted": attempted}), flush=True)
             # Persist only after all rows from this generation batch are closed.
@@ -89,6 +90,7 @@ def collect(config_path, data_path, out_path, seed=42, target=500, attempts_per_
                 print(json.dumps({"stage": "cold-collection-copy", "seed": seed,
                                   "accepted": accepted, "attempted": attempted,
                                   "time_unix": time.time()}), flush=True)
+    accepted = len(accepted_ids)
     meta.update(accepted=accepted, attempted=attempted, reached_target=accepted >= target)
     meta_path.write_text(json.dumps(meta, indent=2) + "\n")
     if accepted < target:
@@ -116,7 +118,7 @@ def sft(config_path, trajectories_path, out_dir, seed=42, epochs=1, resume=None)
     import torch
     config = load_config(config_path)
     seed_all(seed)
-    records = [json.loads(line) for line in Path(trajectories_path).read_text().split("\n") if line.strip()]
+    records = list(read_jsonl(trajectories_path))
     if not records or any(row.get("source_split") != "train" or row["reward"]["correctness"] != 1 for row in records):
         raise ValueError("SFT accepts only verified correct training trajectories")
     out = Path(out_dir)
@@ -130,7 +132,6 @@ def sft(config_path, trajectories_path, out_dir, seed=42, epochs=1, resume=None)
     optimizer = torch.optim.AdamW((p for p in model.parameters() if p.requires_grad), lr=config.get("sft_learning_rate", 2e-4))
     scaler = torch.amp.GradScaler("cuda", enabled=config["dtype"] == "float16" and device.type == "cuda")
     accumulation = config.get("sft_gradient_accumulation", 8)
-    from .training import save_checkpoint
     meta = metadata(config, trajectories_path, model)
     meta.update(seed=seed, epochs=epochs, trajectories=len(records), purpose="cold-start-sft")
     rng = random.Random(seed)
@@ -139,15 +140,7 @@ def sft(config_path, trajectories_path, out_dir, seed=42, epochs=1, resume=None)
     logged_steps = recorded_steps(out / "train.jsonl")
     if resume:
         resume_provenance(resume, out, meta, ("config", "data_sha256", "model_revision_resolved", "seed"), "SFT")
-        state = torch.load(Path(resume) / "training-state.pt", map_location="cpu", weights_only=False)
-        optimizer.load_state_dict(state["optimizer"])
-        scaler.load_state_dict(state["scaler"])
-        torch.set_rng_state(state["torch_rng"])
-        if state["cuda_rng"] and torch.cuda.is_available():
-            if len(state["cuda_rng"]) != torch.cuda.device_count():
-                raise RuntimeError("CUDA device count does not match checkpoint RNG state")
-            torch.cuda.set_rng_state_all(state["cuda_rng"])
-        start_step = state["step"]
+        start_step = restore_checkpoint(resume, optimizer, scaler)
     for epoch in range(epochs):
         order = list(records)
         random.Random(seed + epoch).shuffle(order)
@@ -187,26 +180,24 @@ def sft(config_path, trajectories_path, out_dir, seed=42, epochs=1, resume=None)
 
 
 def _existing_evaluation_rows(out, meta_path, tasks, condition, seed):
-    """Reject a resume that would hide duplicate or foreign rows. Runs before model load."""
+    """Reject duplicate or foreign rows before loading the model."""
+    done = set()
     if not out.exists():
-        return {}
+        return done
     if not meta_path.exists():
         raise ValueError("evaluation output has no provenance; inspect it before resuming")
-    rows = [json.loads(line) for line in out.read_text().splitlines() if line.strip()]
-    ids = [row.get("task_id") for row in rows]
-    if len(ids) != len(set(ids)):
-        raise ValueError("duplicate evaluation task IDs")
-    expected_split = tasks[0].split
-    for row in rows:
-        if row.get("condition") != condition:
-            raise ValueError("cannot append incompatible evaluation: condition")
-        if row.get("seed") != seed:
-            raise ValueError("cannot append incompatible evaluation: seed")
-        if row.get("split") != expected_split:
-            raise ValueError("cannot append incompatible evaluation: split")
-    if set(ids) - {task.id for task in tasks}:
+    expected = {"condition": condition, "seed": seed, "split": tasks[0].split}
+    for row in read_jsonl(out):
+        task_id = row.get("task_id")
+        if task_id in done:
+            raise ValueError("duplicate evaluation task IDs")
+        done.add(task_id)
+        for key, value in expected.items():
+            if row.get(key) != value:
+                raise ValueError(f"cannot append incompatible evaluation: {key}")
+    if done - {task.id for task in tasks}:
         raise ValueError("result includes unexpected task IDs")
-    return {row["task_id"]: row for row in rows}
+    return done
 
 
 def evaluate(config_path, data_path, out_path, condition, seed=42, adapter=None, batch_size=1):
@@ -247,17 +238,9 @@ def evaluate(config_path, data_path, out_path, condition, seed=42, adapter=None,
     for offset in range(0, len(pending), batch_size):
         batch = pending[offset:offset + batch_size]
         started = time.monotonic()
-        if condition == "base-direct" and batch_size > 1:
-            trajectories = batch_direct_trajectories(model, tokenizer, batch,
-                max_new_tokens=config["max_new_tokens"], max_sequence_length=config["max_sequence_length"])
-        elif batch_size > 1:
-            trajectories = batch_tool_trajectories(model, tokenizer, batch,
-                max_new_tokens=config["max_new_tokens"], max_sequence_length=config["max_sequence_length"],
-                enable_python=config.get("python_tool", False))
-        else:
-            trajectories = [sample_trajectory(model, tokenizer, batch[0], temperature=0,
-                tools_enabled=condition != "base-direct", max_new_tokens=config["max_new_tokens"],
-                max_sequence_length=config["max_sequence_length"], enable_python=config.get("python_tool", False))]
+        trajectories = sample_trajectories(model, tokenizer, batch, tools_enabled=condition != "base-direct",
+            max_new_tokens=config["max_new_tokens"], max_sequence_length=config["max_sequence_length"],
+            enable_python=config.get("python_tool", False))
         elapsed = time.monotonic() - started
         for task, trajectory in zip(batch, trajectories):
             append_jsonl(out, {**asdict(trajectory), "dataset": task.dataset, "split": task.split,
