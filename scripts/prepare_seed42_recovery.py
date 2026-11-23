@@ -13,8 +13,8 @@ output = root / "results/recovery-seed42"
 output.mkdir(parents=True, exist_ok=True)
 train_path = source / "grpo-42-train-steps1-214.jsonl"
 dev_path = source / "grpo-42-dev-through-step200.jsonl"
-train = [json.loads(line) for line in train_path.read_text().splitlines()]
-dev = [json.loads(line) for line in dev_path.read_text().splitlines()]
+train = [json.loads(line) for line in train_path.read_text().splitlines() if line.strip()]
+dev = [json.loads(line) for line in dev_path.read_text().splitlines() if line.strip()]
 saved = [row for row in train if row["step"] <= 200]
 lost = [row for row in train if row["step"] > 200]
 files = {

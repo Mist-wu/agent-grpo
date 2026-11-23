@@ -50,4 +50,10 @@ class TorchTests(unittest.TestCase):
         selected.sum().backward()
         self.assertTrue(torch.isfinite(model.table.grad).all())
 
+    def test_grpo_loss_rejects_mismatched_shapes(self):
+        import torch
+        from agent_grpo.objective import grpo_loss
+        with self.assertRaisesRegex(ValueError, 'shapes must match'):
+            grpo_loss(torch.zeros(3), torch.zeros(2), torch.zeros(3), torch.ones(3, dtype=torch.bool), 1.0)
+
 if __name__=='__main__':unittest.main()

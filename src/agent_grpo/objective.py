@@ -28,6 +28,8 @@ def grpo_loss(current, old, reference, mask, advantage, beta=0.04, clip=0.2):
     """One trajectory's loss. Caller averages losses over the sampled group."""
     import torch
     mask = mask.bool()
+    if not (current.shape == old.shape == reference.shape == mask.shape):
+        raise ValueError("current, old, reference, and mask shapes must match")
     if not mask.any():
         raise ValueError("trajectory has no generated tokens")
     cur, prev, ref = current[mask], old.detach()[mask], reference.detach()[mask]

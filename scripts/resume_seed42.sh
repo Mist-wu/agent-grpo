@@ -7,6 +7,7 @@ export EXP_CHECKPOINT_REMOTE=gdrive:exp/runs/E3
 rclone copy gdrive:exp/datasets/e3 data
 rclone copy gdrive:exp/runs/E3/cold-42/adapter results/cold-42/adapter
 rclone copy gdrive:exp/runs/E3/grpo-42/checkpoint-0200 results/grpo-42/checkpoint-0200
+mkdir -p results/grpo-42
 cp "$recovery_inputs/train.jsonl" results/grpo-42/train.jsonl
 cp "$recovery_inputs/dev.jsonl" results/grpo-42/dev.jsonl
 mkdir -p results/recovery-provenance

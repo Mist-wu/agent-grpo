@@ -4,15 +4,14 @@ import json
 from pathlib import Path
 import random
 import statistics
+from .schema import read_jsonl, read_tasks
 
 
 def rescore_saved(data_path, input_path, output_path):
     """Rescore saved generations without editing or regenerating their original records."""
     from datetime import datetime, timezone
     import hashlib
-    from .schema import read_tasks
-    from .rewards import SCORE_VERSION, score_answer, score_answer_strict
-    import re
+    from .rewards import SCORE_VERSION, scored_reward
     tasks = {task.id: task for task in read_tasks(data_path)}
     source = Path(input_path)
     output = Path(output_path)
@@ -26,13 +25,8 @@ def rescore_saved(data_path, input_path, output_path):
     for row in rows:
         task = tasks[row["task_id"]]
         old = row["reward"]
-        score = score_answer(task.dataset, row["final_text"], task.answer)
-        row["original_reward"] = old
-        row["reward"] = {**old, "correctness": score,
-            "total": score + old["parse_bonus"] - old["tool_penalty"],
-            "strict_correctness_v1": score_answer_strict(task.dataset, row["final_text"], task.answer),
-            "final_format_compliant": bool(re.search(r"<final>[^<>]+</final>\s*$", row["final_text"])),
-            "score_version": SCORE_VERSION}
+        base = row.setdefault("original_reward", old)
+        row["reward"] = {**old, **scored_reward(task, row["final_text"], base["parse_bonus"], base["tool_penalty"])}
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text("".join(json.dumps(row, ensure_ascii=False, allow_nan=False) + "\n" for row in rows))
     meta.update(score_version=SCORE_VERSION, rescoring={"created_at": datetime.now(timezone.utc).isoformat(),
@@ -53,11 +47,12 @@ def bootstrap_mean(values, seed=42, count=1000):
 def summarize(paths, output):
     from .rewards import SCORE_VERSION
     groups = defaultdict(list)
+    seen_task_ids = defaultdict(set)
     provenance = []
     for path in paths:
         path = Path(path)
         meta = json.loads(Path(str(path) + ".metadata.json").read_text())
-        rows = [json.loads(line) for line in path.read_text().split("\n") if line.strip()]
+        rows = list(read_jsonl(path))
         if not rows or meta["split"] != "test" or len(rows) != meta["tasks"]:
             raise ValueError(f"not a complete formal final-test evaluation: {path}")
         if any(row["reward"].get("score_version") != SCORE_VERSION for row in rows):
@@ -68,7 +63,11 @@ def summarize(paths, output):
         for row in rows:
             if row["split"] != "test":
                 raise ValueError("development rows cannot enter formal report")
-            groups[(row["condition"], row["seed"], row["dataset"])].append(row)
+            group_key = (row["condition"], row["seed"], row["dataset"])
+            if row["task_id"] in seen_task_ids[group_key]:
+                raise ValueError(f"duplicate task ID across inputs for {group_key}: {row['task_id']}")
+            seen_task_ids[group_key].add(row["task_id"])
+            groups[group_key].append(row)
     summaries = []
     for (condition, seed, dataset), rows in sorted(groups.items()):
         values = [row["reward"]["correctness"] for row in rows]

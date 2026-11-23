@@ -1,6 +1,6 @@
 # agent-grpo：手写多轮工具调用 GRPO
 
-在 Qwen2.5-1.5B-Instruct 上训练会调用工具的 agent：模型可以多轮调用计算器和检索工具，再给出答案。训练分两步：先用答对的轨迹做冷启动 SFT，再用 GRPO 强化学习。GRPO 的采样、奖励、优势和 loss 都在本仓库里手写，没有用 TRL 等现成框架，`src/` 约 1,400 行 Python。
+在 Qwen2.5-1.5B-Instruct 上训练会调用工具的 agent：模型可以多轮调用计算器和检索工具，再给出答案。训练分两步：先用答对的轨迹做冷启动 SFT，再用 GRPO 强化学习。GRPO 的采样、奖励、优势和 loss 都在本仓库里手写，没有用 TRL 等现成框架。
 
 ## 当前进度
 
@@ -23,7 +23,7 @@
 ## GRPO 的实现
 
 - **采样**：每步取 8 道题，每题采样 8 条轨迹，温度 1，不做 top-k / top-p 截断。
-- **奖励**：答对得 1 分（HotpotQA 用答案 F1）；轨迹里有能解析的工具调用加 0.1，每条轨迹只加一次；每调用一次工具扣 0.05。扣分是为了压住无意义的重复调用。
+- **奖励**：答对得 1 分（HotpotQA 用答案 F1）；轨迹里有能解析的工具调用加 0.1，每条轨迹只加一次；每调用一次工具扣 0.05。这项扣分抑制无意义的重复调用。`<final>` 格式合规率单独统计，不计入奖励。
 - **优势**：同一道题的 8 条轨迹组内标准化。
 - **目标函数**：冻结旧策略的 log prob，做 clip（ε = 0.2），加 k3 形式的 KL（β = 0.04）。KL 的参考模型是关掉 LoRA 的基座模型；冷启动 SFT 只用来初始化策略。
 - **loss 范围**：只对模型自己生成的 token 算 loss。提示词和插入的工具结果都不算。先在每条轨迹内按 token 平均，再在轨迹间平均。
@@ -51,7 +51,7 @@ python scripts/run.py evaluate --config configs/a100.json --data data/test.jsonl
   --out results/eval-base-direct.jsonl --condition base-direct
 python scripts/run.py evaluate --config configs/a100.json --data data/test.jsonl \
   --out results/eval-base-tools.jsonl --condition base-tools
-bash scripts/run_seeds.sh configs/a100.json   # 每个种子：收集轨迹、SFT、GRPO、评测
+bash scripts/run_seeds.sh configs/a100.json   # 每个种子：收集轨迹、SFT、评测 SFT、GRPO、评测 GRPO
 ```
 
 从检查点续跑：
